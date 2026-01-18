@@ -46,3 +46,13 @@ uploads/*
 
 # Prisma
 prisma/migrations/*_migration_lock.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
