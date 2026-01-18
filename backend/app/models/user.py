@@ -32,7 +32,8 @@ class User(Base):
 
     # Relaciones
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
-    sales = relationship("Sale", back_populates="user")
+    sales = relationship("Sale", foreign_keys="Sale.user_id", back_populates="user")
+    returns = relationship("Return", back_populates="user")
     inventory_movements = relationship("InventoryMovement", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
 
@@ -44,6 +45,7 @@ class RefreshToken(Base):
     token = Column(String(255), unique=True, nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="refresh_tokens")
