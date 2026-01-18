@@ -40,7 +40,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       return {
         items: [
           ...state.items,
-          { product, quantity, discountPercent: 0 },
+          { product, quantity, discount_percent: 0 },
         ],
       };
     });
@@ -69,7 +69,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     set((state) => ({
       items: state.items.map((item) =>
         item.product.id === productId
-          ? { ...item, discountPercent: Math.min(100, Math.max(0, discountPercent)) }
+          ? { ...item, discount_percent: Math.min(100, Math.max(0, discountPercent)) }
           : item
       ),
     }));
@@ -86,10 +86,10 @@ export const useCartStore = create<CartState>((set, get) => ({
   getSubtotal: () => {
     const { items } = get();
     return items.reduce((total, item) => {
-      const price = parseFloat(item.product.salePrice);
+      const price = parseFloat(item.product.sale_price);
       const quantity = item.quantity;
       const lineSubtotal = price * quantity;
-      const lineDiscount = lineSubtotal * (item.discountPercent / 100);
+      const lineDiscount = lineSubtotal * (item.discount_percent / 100);
       return total + (lineSubtotal - lineDiscount);
     }, 0);
   },
@@ -100,11 +100,11 @@ export const useCartStore = create<CartState>((set, get) => ({
     const subtotalAfterGlobalDiscount = subtotal * (1 - globalDiscountPercent / 100);
 
     return items.reduce((total, item) => {
-      const price = parseFloat(item.product.salePrice);
-      const taxRate = parseFloat(item.product.taxRate);
+      const price = parseFloat(item.product.sale_price);
+      const taxRate = parseFloat(item.product.tax_rate);
       const quantity = item.quantity;
       const lineSubtotal = price * quantity;
-      const lineDiscount = lineSubtotal * (item.discountPercent / 100);
+      const lineDiscount = lineSubtotal * (item.discount_percent / 100);
       const lineSubtotalAfterDiscount = lineSubtotal - lineDiscount;
 
       // Proporción del descuento global
@@ -121,9 +121,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   getDiscountAmount: () => {
     const { items, globalDiscountPercent } = get();
     const itemsDiscount = items.reduce((total, item) => {
-      const price = parseFloat(item.product.salePrice);
+      const price = parseFloat(item.product.sale_price);
       const lineSubtotal = price * item.quantity;
-      return total + lineSubtotal * (item.discountPercent / 100);
+      return total + lineSubtotal * (item.discount_percent / 100);
     }, 0);
 
     const subtotal = get().getSubtotal();

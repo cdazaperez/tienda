@@ -10,7 +10,29 @@ import {
 } from 'lucide-react';
 import { reportApi, inventoryApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { SalesReport, Product } from '../types';
+import { Product } from '../types';
+
+interface DailyReport {
+  date: string;
+  summary: {
+    total_sales: number;
+    completed_sales: number;
+    voided_sales: number;
+    total_revenue: number;
+    total_cost: number;
+    gross_profit: number;
+    profit_margin: number;
+    total_tax: number;
+    avg_sale: number;
+  };
+  top_products: Array<{
+    product_id: string;
+    product_name: string;
+    product_sku: string;
+    quantity_sold: number;
+    revenue: number;
+  }>;
+}
 
 function StatCard({
   title,
@@ -68,7 +90,7 @@ export function DashboardPage() {
     queryKey: ['daily-report'],
     queryFn: async () => {
       const response = await reportApi.getDaily();
-      return response.data.data as SalesReport & { date: string };
+      return response.data as DailyReport;
     },
   });
 
@@ -76,7 +98,7 @@ export function DashboardPage() {
     queryKey: ['low-stock'],
     queryFn: async () => {
       const response = await inventoryApi.getLowStock();
-      return response.data.data as Product[];
+      return response.data as Product[];
     },
   });
 
@@ -94,7 +116,7 @@ export function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          ¡Bienvenido, {user?.firstName}!
+          ¡Bienvenido, {user?.first_name}!
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           Aquí tienes un resumen de tu negocio hoy
@@ -105,19 +127,19 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Ventas de Hoy"
-          value={formatCurrency(dailyReport?.summary.totalRevenue || 0)}
+          value={formatCurrency(dailyReport?.summary?.total_revenue || 0)}
           icon={DollarSign}
           color="bg-green-500"
         />
         <StatCard
           title="Transacciones"
-          value={dailyReport?.summary.totalSales || 0}
+          value={dailyReport?.summary?.total_sales || 0}
           icon={ShoppingCart}
           color="bg-blue-500"
         />
         <StatCard
           title="Ticket Promedio"
-          value={formatCurrency(dailyReport?.summary.avgTicket || 0)}
+          value={formatCurrency(dailyReport?.summary?.avg_sale || 0)}
           icon={TrendingUp}
           color="bg-purple-500"
         />
@@ -139,11 +161,11 @@ export function DashboardPage() {
             </h2>
           </div>
           <div className="card-body">
-            {dailyReport?.topProducts && dailyReport.topProducts.length > 0 ? (
+            {dailyReport?.top_products && dailyReport.top_products.length > 0 ? (
               <div className="space-y-3">
-                {dailyReport.topProducts.slice(0, 5).map((product, index) => (
+                {dailyReport.top_products.slice(0, 5).map((product, index) => (
                   <div
-                    key={product.id}
+                    key={product.product_id}
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
@@ -152,10 +174,10 @@ export function DashboardPage() {
                       </span>
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {product.name}
+                          {product.product_name}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {product.quantity} vendidos
+                          {product.quantity_sold} vendidos
                         </p>
                       </div>
                     </div>
@@ -199,10 +221,10 @@ export function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-orange-600 dark:text-orange-400">
-                        {product.currentStock} unidades
+                        {product.current_stock} unidades
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Mín: {product.minStock}
+                        Mín: {product.min_stock}
                       </p>
                     </div>
                   </div>
@@ -216,54 +238,6 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {/* Recent Sales */}
-      {isAdmin && dailyReport?.sales && dailyReport.sales.length > 0 && (
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Ventas Recientes
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Recibo</th>
-                  <th>Vendedor</th>
-                  <th>Items</th>
-                  <th>Método</th>
-                  <th>Total</th>
-                  <th>Hora</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dailyReport.sales.slice(0, 10).map((sale) => (
-                  <tr key={sale.id}>
-                    <td className="font-medium">#{sale.receiptNumber}</td>
-                    <td>{sale.seller}</td>
-                    <td>{sale.itemCount}</td>
-                    <td>
-                      <span className="badge badge-info">
-                        {sale.paymentMethod}
-                      </span>
-                    </td>
-                    <td className="font-semibold text-green-600">
-                      {formatCurrency(sale.total)}
-                    </td>
-                    <td className="text-gray-500">
-                      {new Date(sale.createdAt).toLocaleTimeString('es-CO', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

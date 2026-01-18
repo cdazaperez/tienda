@@ -26,7 +26,7 @@ export function CategoriesPage() {
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await categoryApi.getAll();
-      return response.data.data as Category[];
+      return response.data as Category[];
     },
   });
 
@@ -37,21 +37,21 @@ export function CategoriesPage() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       closeModal();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al crear categoría');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al crear categoría');
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CategoryForm> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<CategoryForm> & { is_active?: boolean } }) =>
       categoryApi.update(id, data),
     onSuccess: () => {
       toast.success('Categoría actualizada');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       closeModal();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al actualizar');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al actualizar');
     },
   });
 
@@ -61,8 +61,8 @@ export function CategoriesPage() {
       toast.success('Categoría eliminada');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al eliminar');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al eliminar');
     },
   });
 
@@ -122,7 +122,7 @@ export function CategoriesPage() {
                       {category.name}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {category._count?.products || 0} productos
+                      {category.product_count || 0} productos
                     </p>
                   </div>
                 </div>
@@ -152,10 +152,10 @@ export function CategoriesPage() {
               )}
               <span
                 className={`mt-3 inline-block badge ${
-                  category.isActive ? 'badge-success' : 'badge-danger'
+                  category.is_active ? 'badge-success' : 'badge-danger'
                 }`}
               >
-                {category.isActive ? 'Activa' : 'Inactiva'}
+                {category.is_active ? 'Activa' : 'Inactiva'}
               </span>
             </div>
           ))

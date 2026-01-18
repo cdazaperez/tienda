@@ -49,7 +49,7 @@ export function POSPage() {
     queryFn: async () => {
       if (searchTerm.length < 2) return [];
       const response = await productApi.search(searchTerm);
-      return response.data.data as Product[];
+      return response.data as Product[];
     },
     enabled: searchTerm.length >= 2,
   });
@@ -58,19 +58,19 @@ export function POSPage() {
     mutationFn: async () => {
       const saleData = {
         items: items.map((item) => ({
-          productId: item.product.id,
+          product_id: item.product.id,
           quantity: item.quantity,
-          discountPercent: item.discountPercent,
+          discount_percent: item.discount_percent,
         })),
-        paymentMethod,
-        amountPaid: parseFloat(amountPaid),
-        globalDiscountPercent,
+        payment_method: paymentMethod,
+        amount_paid: parseFloat(amountPaid),
+        discount_percent: globalDiscountPercent,
         notes: saleNotes || undefined,
       };
       return saleApi.create(saleData);
     },
     onSuccess: async (response) => {
-      toast.success(response.data.message || 'Venta registrada exitosamente');
+      toast.success('Venta registrada exitosamente');
       clearCart();
       setShowPaymentModal(false);
       setAmountPaid('');
@@ -78,11 +78,11 @@ export function POSPage() {
       queryClient.invalidateQueries({ queryKey: ['daily-report'] });
 
       // Abrir recibo en nueva ventana
-      const saleId = response.data.data.id;
+      const saleId = response.data.id;
       window.open(`/api/sales/${saleId}/receipt/html?print=true`, '_blank');
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al procesar la venta');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al procesar la venta');
     },
   });
 
@@ -95,14 +95,14 @@ export function POSPage() {
   };
 
   const handleAddProduct = (product: Product) => {
-    if (product.currentStock <= 0) {
+    if (product.current_stock <= 0) {
       toast.error('Producto sin stock disponible');
       return;
     }
 
     const existingItem = items.find((item) => item.product.id === product.id);
-    if (existingItem && existingItem.quantity >= product.currentStock) {
-      toast.error(`Solo hay ${product.currentStock} unidades disponibles`);
+    if (existingItem && existingItem.quantity >= product.current_stock) {
+      toast.error(`Solo hay ${product.current_stock} unidades disponibles`);
       return;
     }
 
@@ -173,11 +173,11 @@ export function POSPage() {
                           {product.name}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          SKU: {product.sku} | Stock: {product.currentStock}
+                          SKU: {product.sku} | Stock: {product.current_stock}
                         </p>
                       </div>
                       <span className="font-semibold text-primary-600">
-                        {formatCurrency(parseFloat(product.salePrice))}
+                        {formatCurrency(parseFloat(product.sale_price))}
                       </span>
                     </button>
                   ))}
@@ -216,9 +216,9 @@ export function POSPage() {
             ) : (
               <div className="space-y-3">
                 {items.map((item) => {
-                  const price = parseFloat(item.product.salePrice);
+                  const price = parseFloat(item.product.sale_price);
                   const lineTotal =
-                    price * item.quantity * (1 - item.discountPercent / 100);
+                    price * item.quantity * (1 - item.discount_percent / 100);
 
                   return (
                     <div
@@ -258,7 +258,7 @@ export function POSPage() {
                           </span>
                           <button
                             onClick={() => {
-                              if (item.quantity < item.product.currentStock) {
+                              if (item.quantity < item.product.current_stock) {
                                 updateQuantity(item.product.id, item.quantity + 1);
                               } else {
                                 toast.error('Stock insuficiente');
@@ -277,7 +277,7 @@ export function POSPage() {
                             type="number"
                             min="0"
                             max="100"
-                            value={item.discountPercent || ''}
+                            value={item.discount_percent || ''}
                             onChange={(e) =>
                               updateDiscount(
                                 item.product.id,

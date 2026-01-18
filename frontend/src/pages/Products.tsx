@@ -8,30 +8,29 @@ import {
   Edit,
   Trash2,
   Package,
-  Filter,
 } from 'lucide-react';
 import { productApi, categoryApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
-import { Product, Category } from '../types';
+import { Product, Category, PaginatedResponse } from '../types';
 
 interface ProductForm {
   sku: string;
   barcode?: string;
   name: string;
   description?: string;
-  categoryId: string;
+  category_id: string;
   brand?: string;
   size?: string;
   color?: string;
-  salePrice: number;
-  costPrice?: number;
-  taxRate?: number;
+  sale_price: number;
+  cost_price?: number;
+  tax_rate?: number;
   unit: string;
-  minStock: number;
-  currentStock: number;
+  min_stock: number;
+  initial_stock: number;
 }
 
 export function ProductsPage() {
@@ -46,23 +45,25 @@ export function ProductsPage() {
   const { register, handleSubmit, reset, setValue, formState: { errors } } =
     useForm<ProductForm>();
 
-  const { data: products, isLoading } = useQuery({
+  const { data: productsData, isLoading } = useQuery({
     queryKey: ['products', searchTerm, categoryFilter],
     queryFn: async () => {
       const response = await productApi.getAll({
         search: searchTerm || undefined,
-        categoryId: categoryFilter || undefined,
-        limit: 100,
+        category_id: categoryFilter || undefined,
+        page_size: 100,
       });
-      return response.data.data as Product[];
+      return response.data as PaginatedResponse<Product>;
     },
   });
+
+  const products = productsData?.items || [];
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const response = await categoryApi.getAll(true);
-      return response.data.data as Category[];
+      return response.data as Category[];
     },
   });
 
@@ -73,8 +74,8 @@ export function ProductsPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       closeModal();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al crear producto');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al crear producto');
     },
   });
 
@@ -86,8 +87,8 @@ export function ProductsPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       closeModal();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al actualizar producto');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al actualizar producto');
     },
   });
 
@@ -97,8 +98,8 @@ export function ProductsPage() {
       toast.success('Producto desactivado');
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al eliminar producto');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al eliminar producto');
     },
   });
 
@@ -114,22 +115,24 @@ export function ProductsPage() {
     setValue('barcode', product.barcode || '');
     setValue('name', product.name);
     setValue('description', product.description || '');
-    setValue('categoryId', product.categoryId);
+    setValue('category_id', product.category_id);
     setValue('brand', product.brand || '');
     setValue('size', product.size || '');
     setValue('color', product.color || '');
-    setValue('salePrice', parseFloat(product.salePrice));
-    setValue('costPrice', product.costPrice ? parseFloat(product.costPrice) : undefined);
-    setValue('taxRate', parseFloat(product.taxRate));
+    setValue('sale_price', parseFloat(product.sale_price));
+    setValue('cost_price', product.cost_price ? parseFloat(product.cost_price) : undefined);
+    setValue('tax_rate', parseFloat(product.tax_rate));
     setValue('unit', product.unit);
-    setValue('minStock', product.minStock);
-    setValue('currentStock', product.currentStock);
+    setValue('min_stock', product.min_stock);
+    setValue('initial_stock', product.current_stock);
     setShowModal(true);
   };
 
   const onSubmit = (data: ProductForm) => {
     if (editingProduct) {
-      updateMutation.mutate({ id: editingProduct.id, data });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { initial_stock, ...updateData } = data;
+      updateMutation.mutate({ id: editingProduct.id, data: updateData });
     } else {
       createMutation.mutate(data);
     }
@@ -233,30 +236,30 @@ export function ProductsPage() {
                     <td className="font-mono text-sm">{product.sku}</td>
                     <td>{product.category?.name || '-'}</td>
                     <td className="font-semibold">
-                      {formatCurrency(product.salePrice)}
+                      {formatCurrency(product.sale_price)}
                     </td>
                     <td>
                       <span
                         className={`font-medium ${
-                          product.currentStock <= product.minStock
+                          product.current_stock <= product.min_stock
                             ? 'text-red-600'
                             : 'text-gray-900 dark:text-white'
                         }`}
                       >
-                        {product.currentStock}
+                        {product.current_stock}
                       </span>
                       <span className="text-gray-400 text-sm">
                         {' '}
-                        / mín: {product.minStock}
+                        / mín: {product.min_stock}
                       </span>
                     </td>
                     <td>
                       <span
                         className={`badge ${
-                          product.isActive ? 'badge-success' : 'badge-danger'
+                          product.is_active ? 'badge-success' : 'badge-danger'
                         }`}
                       >
-                        {product.isActive ? 'Activo' : 'Inactivo'}
+                        {product.is_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     {isAdmin && (
@@ -337,7 +340,7 @@ export function ProductsPage() {
               <label className="label">Categoría *</label>
               <select
                 className="input"
-                {...register('categoryId', { required: 'Categoría requerida' })}
+                {...register('category_id', { required: 'Categoría requerida' })}
               >
                 <option value="">Seleccionar...</option>
                 {categories?.map((cat) => (
@@ -372,7 +375,7 @@ export function ProductsPage() {
               type="number"
               step="0.01"
               defaultValue={0.19}
-              {...register('taxRate', { valueAsNumber: true })}
+              {...register('tax_rate', { valueAsNumber: true })}
             />
           </div>
 
@@ -381,8 +384,8 @@ export function ProductsPage() {
               label="Precio de Venta *"
               type="number"
               step="100"
-              error={errors.salePrice?.message}
-              {...register('salePrice', {
+              error={errors.sale_price?.message}
+              {...register('sale_price', {
                 required: 'Precio requerido',
                 valueAsNumber: true,
               })}
@@ -391,7 +394,7 @@ export function ProductsPage() {
               label="Precio de Costo"
               type="number"
               step="100"
-              {...register('costPrice', { valueAsNumber: true })}
+              {...register('cost_price', { valueAsNumber: true })}
             />
           </div>
 
@@ -400,14 +403,14 @@ export function ProductsPage() {
               label="Stock Mínimo"
               type="number"
               defaultValue={0}
-              {...register('minStock', { valueAsNumber: true })}
+              {...register('min_stock', { valueAsNumber: true })}
             />
             {!editingProduct && (
               <Input
                 label="Stock Inicial"
                 type="number"
                 defaultValue={0}
-                {...register('currentStock', { valueAsNumber: true })}
+                {...register('initial_stock', { valueAsNumber: true })}
               />
             )}
           </div>

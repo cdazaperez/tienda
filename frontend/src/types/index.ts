@@ -4,22 +4,22 @@ export interface User {
   id: string;
   email: string;
   username: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   role: UserRole;
-  isActive?: boolean;
-  lastLogin?: string;
-  createdAt?: string;
+  is_active?: boolean;
+  last_login?: string;
+  created_at?: string;
 }
 
 export interface Category {
   id: string;
   name: string;
   description?: string;
-  isActive: boolean;
-  _count?: {
-    products: number;
-  };
+  is_active: boolean;
+  product_count?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Product {
@@ -28,57 +28,56 @@ export interface Product {
   barcode?: string;
   name: string;
   description?: string;
-  categoryId: string;
+  category_id: string;
   category?: Category;
   brand?: string;
   size?: string;
   color?: string;
-  salePrice: string;
-  costPrice?: string;
-  taxRate: string;
+  sale_price: string;
+  cost_price?: string;
+  tax_rate: string;
   unit: string;
-  imageUrl?: string;
-  minStock: number;
-  currentStock: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  image_url?: string;
+  min_stock: number;
+  current_stock: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface InventoryMovement {
   id: string;
-  productId: string;
-  userId: string;
+  product_id: string;
+  user_id: string;
   type: 'ENTRY' | 'SALE' | 'ADJUSTMENT' | 'RETURN' | 'VOID';
   quantity: number;
-  previousStock: number;
-  newStock: number;
-  unitCost?: string;
+  previous_stock: number;
+  new_stock: number;
+  unit_cost?: string;
   reason?: string;
-  referenceId?: string;
-  referenceType?: string;
-  createdAt: string;
-  user?: {
-    firstName: string;
-    lastName: string;
-  };
+  reference_id?: string;
+  reference_type?: string;
+  created_at: string;
+  user_name?: string;
+  product_name?: string;
+  product_sku?: string;
 }
 
 export interface SaleItem {
   id: string;
-  saleId: string;
-  productId: string;
-  productName: string;
-  productSku: string;
+  sale_id: string;
+  product_id: string;
+  product_name: string;
+  product_sku: string;
   quantity: number;
-  unitPrice: string;
-  discountPercent: string;
-  discountAmount: string;
-  taxRate: string;
-  taxAmount: string;
+  unit_price: string;
+  discount_percent: string;
+  discount_amount: string;
+  tax_rate: string;
+  tax_amount: string;
   subtotal: string;
   total: string;
-  returnedQty: number;
+  returned_qty: number;
 }
 
 export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'MIXED';
@@ -86,136 +85,134 @@ export type SaleStatus = 'COMPLETED' | 'VOIDED' | 'PARTIAL_RETURN';
 
 export interface Sale {
   id: string;
-  receiptNumber: number;
-  userId: string;
-  user?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
+  receipt_number: string;
+  user_id: string;
+  user_name?: string;
   status: SaleStatus;
   subtotal: string;
-  discountAmount: string;
-  taxAmount: string;
+  discount_amount: string;
+  discount_percent: string;
+  tax_amount: string;
   total: string;
-  paymentMethod: PaymentMethod;
-  amountPaid: string;
-  changeAmount: string;
+  payment_method: PaymentMethod;
+  amount_paid: string;
+  change_amount: string;
   notes?: string;
-  voidReason?: string;
-  voidedAt?: string;
-  voidedBy?: string;
-  createdAt: string;
+  void_reason?: string;
+  voided_at?: string;
+  voided_by_id?: string;
+  created_at: string;
+  updated_at: string;
   items: SaleItem[];
-  returns?: Return[];
 }
 
 export interface Return {
   id: string;
-  returnNumber: number;
-  saleId: string;
-  userId: string;
+  sale_id: string;
+  user_id: string;
   reason: string;
-  totalRefund: string;
-  createdAt: string;
+  total_refund: string;
+  created_at: string;
   items: ReturnItem[];
 }
 
 export interface ReturnItem {
   id: string;
-  returnId: string;
-  productId: string;
+  return_id: string;
+  sale_item_id: string;
   quantity: number;
-  unitPrice: string;
-  refundAmount: string;
+  refund_amount: string;
 }
 
 export interface StoreConfig {
   id: string;
-  storeName: string;
-  storeNit?: string;
-  storeAddress?: string;
-  storePhone?: string;
-  storeEmail?: string;
-  logoUrl?: string;
-  primaryColor: string;
-  secondaryColor: string;
-  accentColor: string;
-  darkMode: boolean;
-  allowNegativeStock: boolean;
-  maxLoginAttempts: number;
-  lockoutMinutes: number;
-  defaultTaxRate: string;
-  receiptFooter?: string;
+  store_name: string;
+  store_nit?: string;
+  store_address?: string;
+  store_phone?: string;
+  store_email?: string;
+  logo_url?: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  dark_mode: boolean;
+  allow_negative_stock: boolean;
+  max_login_attempts: number;
+  lockout_minutes: number;
+  default_tax_rate: string;
+  receipt_footer?: string;
 }
 
 export interface AuditLog {
   id: string;
-  userId?: string;
-  user?: User;
+  user_id?: string;
+  user_name?: string;
   action: string;
   entity: string;
-  entityId?: string;
-  oldValues?: Record<string, unknown>;
-  newValues?: Record<string, unknown>;
-  ipAddress?: string;
-  userAgent?: string;
+  entity_id?: string;
+  old_values?: Record<string, unknown>;
+  new_values?: Record<string, unknown>;
+  ip_address?: string;
+  user_agent?: string;
   description?: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export interface Pagination {
   page: number;
-  limit: number;
+  page_size: number;
   total: number;
-  totalPages: number;
+  total_pages: number;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  errors?: Array<{ field?: string; message: string }>;
-  pagination?: Pagination;
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface CartItem {
   product: Product;
   quantity: number;
-  discountPercent: number;
+  discount_percent: number;
 }
 
 export interface SalesReport {
-  summary: {
-    totalSales: number;
-    totalRevenue: string;
-    avgTicket: string;
+  period: {
+    start_date: string;
+    end_date: string;
   };
-  topProducts: Array<{
-    id: string;
-    name: string;
-    quantity: number;
-    revenue: string;
+  summary: {
+    total_sales: number;
+    completed_sales: number;
+    voided_sales: number;
+    total_revenue: number;
+    total_cost: number;
+    gross_profit: number;
+    profit_margin: number;
+    total_tax: number;
+    avg_sale: number;
+  };
+  by_payment_method: Record<string, { count: number; total: number }>;
+  by_category: Array<{
+    category_id: string;
+    category_name: string;
+    quantity_sold: number;
+    revenue: number;
   }>;
-  topCategories: Array<{
-    id: string;
-    name: string;
-    quantity: number;
-    revenue: string;
+  top_products: Array<{
+    product_id: string;
+    product_name: string;
+    product_sku: string;
+    quantity_sold: number;
+    revenue: number;
   }>;
-  topSellers: Array<{
-    id: string;
-    name: string;
-    sales: number;
-    revenue: string;
-  }>;
-  sales: Array<{
-    id: string;
-    receiptNumber: number;
-    total: string;
-    createdAt: string;
-    seller: string;
-    paymentMethod: string;
-    itemCount: number;
+  by_seller: Array<{
+    user_id: string;
+    user_name: string;
+    total_sales: number;
+    total_revenue: number;
   }>;
 }

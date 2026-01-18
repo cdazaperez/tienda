@@ -13,8 +13,8 @@ interface UserForm {
   email: string;
   username: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   role: 'ADMIN' | 'SELLER';
 }
 
@@ -33,7 +33,7 @@ export function UsersPage() {
     queryKey: ['users'],
     queryFn: async () => {
       const response = await userApi.getAll();
-      return response.data.data as User[];
+      return response.data as User[];
     },
   });
 
@@ -44,8 +44,8 @@ export function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       closeModal();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al crear usuario');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al crear usuario');
     },
   });
 
@@ -57,8 +57,8 @@ export function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       closeModal();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al actualizar');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al actualizar');
     },
   });
 
@@ -68,8 +68,8 @@ export function UsersPage() {
       toast.success(response.data.message);
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error');
     },
   });
 
@@ -80,8 +80,8 @@ export function UsersPage() {
       setShowPasswordModal(false);
       setNewPassword('');
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al resetear');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al resetear');
     },
   });
 
@@ -95,14 +95,15 @@ export function UsersPage() {
     setEditingUser(user);
     setValue('email', user.email);
     setValue('username', user.username);
-    setValue('firstName', user.firstName);
-    setValue('lastName', user.lastName);
+    setValue('first_name', user.first_name);
+    setValue('last_name', user.last_name);
     setValue('role', user.role);
     setShowModal(true);
   };
 
   const onSubmit = (data: UserForm) => {
     if (editingUser) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...updateData } = data;
       updateMutation.mutate({ id: editingUser.id, data: updateData });
     } else {
@@ -157,7 +158,7 @@ export function UsersPage() {
                         </div>
                         <div>
                           <p className="font-medium">
-                            {user.firstName} {user.lastName}
+                            {user.first_name} {user.last_name}
                           </p>
                           <p className="text-sm text-gray-500">@{user.username}</p>
                         </div>
@@ -174,17 +175,17 @@ export function UsersPage() {
                       </span>
                     </td>
                     <td>
-                      {user.lastLogin
-                        ? new Date(user.lastLogin).toLocaleString('es-CO')
+                      {user.last_login
+                        ? new Date(user.last_login).toLocaleString('es-CO')
                         : 'Nunca'}
                     </td>
                     <td>
                       <span
                         className={`badge ${
-                          user.isActive ? 'badge-success' : 'badge-danger'
+                          user.is_active ? 'badge-success' : 'badge-danger'
                         }`}
                       >
-                        {user.isActive ? 'Activo' : 'Inactivo'}
+                        {user.is_active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td>
@@ -209,13 +210,13 @@ export function UsersPage() {
                         <button
                           onClick={() => toggleActiveMutation.mutate(user.id)}
                           className={`p-1.5 rounded ${
-                            user.isActive
+                            user.is_active
                               ? 'hover:bg-red-50 text-red-500'
                               : 'hover:bg-green-50 text-green-500'
                           }`}
-                          title={user.isActive ? 'Desactivar' : 'Activar'}
+                          title={user.is_active ? 'Desactivar' : 'Activar'}
                         >
-                          {user.isActive ? (
+                          {user.is_active ? (
                             <UserX className="w-4 h-4" />
                           ) : (
                             <UserCheck className="w-4 h-4" />
@@ -247,13 +248,13 @@ export function UsersPage() {
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Nombre *"
-              error={errors.firstName?.message}
-              {...register('firstName', { required: 'Requerido' })}
+              error={errors.first_name?.message}
+              {...register('first_name', { required: 'Requerido' })}
             />
             <Input
               label="Apellido *"
-              error={errors.lastName?.message}
-              {...register('lastName', { required: 'Requerido' })}
+              error={errors.last_name?.message}
+              {...register('last_name', { required: 'Requerido' })}
             />
           </div>
           <Input
@@ -307,7 +308,7 @@ export function UsersPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-600">
-            Usuario: <strong>{selectedUser?.firstName} {selectedUser?.lastName}</strong>
+            Usuario: <strong>{selectedUser?.first_name} {selectedUser?.last_name}</strong>
           </p>
           <Input
             label="Nueva Contraseña *"
