@@ -1,6 +1,6 @@
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Enum, Numeric
 from sqlalchemy.dialects.postgresql import UUID
@@ -43,8 +43,8 @@ class Sale(Base):
     void_reason = Column(Text, nullable=True)
     voided_at = Column(DateTime(timezone=True), nullable=True)
     voided_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relaciones
     user = relationship("User", foreign_keys=[user_id], back_populates="sales")
@@ -72,7 +72,7 @@ class SaleItem(Base):
     tax_amount = Column(Numeric(12, 2), default=Decimal("0"), nullable=False)
     total = Column(Numeric(12, 2), nullable=False)
     returned_qty = Column(Integer, default=0, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relaciones
     sale = relationship("Sale", back_populates="items")
@@ -87,7 +87,7 @@ class Return(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     reason = Column(Text, nullable=False)
     total_refund = Column(Numeric(12, 2), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relaciones
     sale = relationship("Sale", back_populates="returns")
@@ -103,7 +103,7 @@ class ReturnItem(Base):
     sale_item_id = Column(UUID(as_uuid=True), ForeignKey("sale_items.id"), nullable=False)
     quantity = Column(Integer, nullable=False)
     refund_amount = Column(Numeric(12, 2), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relaciones
     return_record = relationship("Return", back_populates="items")

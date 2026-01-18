@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -33,8 +33,8 @@ class StoreConfig(Base):
     currency_symbol = Column(String(10), default="$", nullable=False)
     currency_code = Column(String(3), default="CLP", nullable=False)
     dark_mode_default = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
 
 class Sequence(Base):
@@ -46,5 +46,5 @@ class Sequence(Base):
     prefix = Column(String(10), default="", nullable=False)
     current_value = Column(Integer, default=0, nullable=False)
     padding = Column(Integer, default=8, nullable=False)  # Ej: 00000001
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)

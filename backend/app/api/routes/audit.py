@@ -1,6 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
@@ -138,7 +138,7 @@ def get_recent_activity(
     db: Session = Depends(get_db)
 ):
     """Obtener actividad reciente"""
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
     logs = db.query(AuditLog).filter(
         AuditLog.created_at >= since

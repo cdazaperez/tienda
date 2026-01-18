@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -75,8 +75,8 @@ def login(
 
     # Verificar si está bloqueado
     config = get_store_config(db)
-    if user.locked_until and user.locked_until > datetime.utcnow():
-        remaining = (user.locked_until - datetime.utcnow()).seconds // 60
+    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
+        remaining = (user.locked_until - datetime.now(timezone.utc)).seconds // 60
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
             detail=f"Cuenta bloqueada. Intente en {remaining} minutos"
@@ -87,7 +87,7 @@ def login(
         user.failed_attempts += 1
 
         if user.failed_attempts >= config.max_failed_attempts:
-            user.locked_until = datetime.utcnow() + timedelta(minutes=config.lockout_duration_minutes)
+            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=config.lockout_duration_minutes)
             user.failed_attempts = 0
             db.commit()
 
@@ -118,7 +118,7 @@ def login(
     # Login exitoso
     user.failed_attempts = 0
     user.locked_until = None
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
 
     # Crear tokens
     access_token = create_access_token(data={"sub": str(user.id)})
@@ -128,7 +128,7 @@ def login(
     refresh_token = RefreshToken(
         user_id=user.id,
         token=refresh_token_str,
-        expires_at=datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
     )
     db.add(refresh_token)
     db.commit()
@@ -172,7 +172,7 @@ def refresh_token(
         RefreshToken.token == data.refresh_token,
         RefreshToken.user_id == UUID(user_id),
         RefreshToken.revoked == False,
-        RefreshToken.expires_at > datetime.utcnow()
+        RefreshToken.expires_at > datetime.now(timezone.utc)
     ).first()
 
     if not stored_token:
@@ -199,7 +199,7 @@ def refresh_token(
     new_token = RefreshToken(
         user_id=user.id,
         token=new_refresh_token,
-        expires_at=datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
     )
     db.add(new_token)
     db.commit()

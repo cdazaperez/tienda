@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -333,7 +333,7 @@ def void_sale(
 
     sale.status = SaleStatus.VOIDED
     sale.void_reason = data.reason
-    sale.voided_at = datetime.utcnow()
+    sale.voided_at = datetime.now(timezone.utc)
     sale.voided_by_id = current_user.id
 
     db.commit()

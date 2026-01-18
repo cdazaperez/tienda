@@ -1,6 +1,6 @@
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -29,7 +29,7 @@ class InventoryMovement(Base):
     reason = Column(Text, nullable=True)
     reference_id = Column(UUID(as_uuid=True), nullable=True)  # ID de venta, devolución, etc.
     reference_type = Column(String(50), nullable=True)  # "SALE", "RETURN", etc.
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relaciones
     product = relationship("Product", back_populates="inventory_movements")
