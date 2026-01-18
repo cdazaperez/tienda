@@ -29,7 +29,7 @@ services:
     networks:
       - tienda_network
 
-  # Aplicación completa (Backend + Frontend)
+  # Aplicación completa (Backend Python + Frontend React)
   app:
     build:
       context: .
@@ -37,12 +37,12 @@ services:
     container_name: tienda_app
     restart: unless-stopped
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://tienda:tienda123@postgres:5432/tienda_db?schema=public
+      DATABASE_URL: postgresql://tienda:tienda123@postgres:5432/tienda_db
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
-      JWT_EXPIRES_IN: 15m
-      JWT_REFRESH_EXPIRES_IN: 7d
-      CORS_ORIGIN: http://localhost
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: 7
+      CORS_ORIGINS: http://localhost
+      AUTO_CREATE_TABLES: "true"
     volumes:
       - uploads_data:/app/backend/uploads
       - logs_data:/app/backend/logs

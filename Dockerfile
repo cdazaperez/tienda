@@ -1,6 +1,6 @@
 # =============================================================================
 # Dockerfile - Sistema POS Tienda Minorista
-# Construcción multi-stage para backend y frontend
+# Construcción multi-stage para backend Python y frontend React
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -23,49 +23,33 @@ COPY frontend/ ./
 RUN npm run build
 
 # -----------------------------------------------------------------------------
-# Stage 2: Build Backend
+# Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS backend-builder
+FROM python:3.11-slim AS production
 
-WORKDIR /app/backend
-
-# Copiar archivos de dependencias
-COPY backend/package*.json ./
-COPY backend/prisma ./prisma/
-
-# Instalar dependencias
-RUN npm ci
-
-# Generar cliente Prisma
-RUN npx prisma generate
-
-# Copiar código fuente del backend
-COPY backend/ ./
-
-# Compilar TypeScript
-RUN npm run build
-
-# -----------------------------------------------------------------------------
-# Stage 3: Production Runtime
-# -----------------------------------------------------------------------------
-FROM node:20-alpine AS production
-
-# Instalar nginx y supervisor para manejar múltiples procesos
-RUN apk add --no-cache nginx supervisor
+# Instalar nginx, supervisor y curl
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx \
+    supervisor \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Crear usuario no-root para seguridad
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 appuser
+RUN groupadd --system --gid 1001 appgroup && \
+    useradd --system --uid 1001 --gid appgroup appuser
 
 # -----------------------------------------------------------------------------
-# Copiar Backend compilado
+# Instalar dependencias de Python
 # -----------------------------------------------------------------------------
-COPY --from=backend-builder /app/backend/dist ./backend/dist
-COPY --from=backend-builder /app/backend/node_modules ./backend/node_modules
-COPY --from=backend-builder /app/backend/prisma ./backend/prisma
-COPY --from=backend-builder /app/backend/package.json ./backend/
+COPY backend/requirements.txt ./backend/
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+# -----------------------------------------------------------------------------
+# Copiar código del Backend
+# -----------------------------------------------------------------------------
+COPY backend/ ./backend/
 
 # -----------------------------------------------------------------------------
 # Copiar Frontend compilado
@@ -77,7 +61,7 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 # -----------------------------------------------------------------------------
 RUN mkdir -p /run/nginx /var/log/nginx
 
-COPY <<'NGINX_CONF' /etc/nginx/http.d/default.conf
+COPY <<'NGINX_CONF' /etc/nginx/sites-available/default
 server {
     listen 80;
     server_name localhost;
@@ -133,8 +117,10 @@ server {
 NGINX_CONF
 
 # -----------------------------------------------------------------------------
-# Configuración de Supervisor para manejar nginx y node
+# Configuración de Supervisor para manejar nginx y uvicorn
 # -----------------------------------------------------------------------------
+RUN mkdir -p /var/log/supervisor
+
 COPY <<'SUPERVISOR_CONF' /etc/supervisor/conf.d/supervisord.conf
 [supervisord]
 nodaemon=true
@@ -152,7 +138,7 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 
 [program:backend]
-command=sh -c "cd /app/backend && npx prisma migrate deploy && node dist/index.js"
+command=python -m uvicorn app.main:app --host 0.0.0.0 --port 3001
 directory=/app/backend
 autostart=true
 autorestart=true
@@ -160,18 +146,19 @@ stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
-environment=NODE_ENV="production",PORT="3001"
+environment=PYTHONPATH="/app/backend",PYTHONUNBUFFERED="1"
 SUPERVISOR_CONF
 
 # -----------------------------------------------------------------------------
 # Script de inicio
 # -----------------------------------------------------------------------------
 COPY <<'ENTRYPOINT_SCRIPT' /app/entrypoint.sh
-#!/bin/sh
+#!/bin/bash
 set -e
 
 echo "=========================================="
 echo "  Sistema POS - Tienda Minorista"
+echo "  Backend: Python/FastAPI"
 echo "=========================================="
 echo ""
 
@@ -200,13 +187,14 @@ echo ""
 echo "Esperando conexión a base de datos..."
 max_retries=30
 counter=0
-until cd /app/backend && node -e "
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-prisma.\$connect().then(() => {
-    console.log('✓ Conexión a base de datos exitosa');
-    process.exit(0);
-}).catch(() => process.exit(1));
+
+until python -c "
+from sqlalchemy import create_engine
+import os
+engine = create_engine(os.environ['DATABASE_URL'])
+conn = engine.connect()
+conn.close()
+print('✓ Conexión a base de datos exitosa')
 " 2>/dev/null; do
     counter=$((counter + 1))
     if [ $counter -ge $max_retries ]; then
@@ -216,6 +204,34 @@ prisma.\$connect().then(() => {
     echo "  Intento $counter/$max_retries - Reintentando en 2 segundos..."
     sleep 2
 done
+
+# Ejecutar migraciones/seed si es necesario
+echo ""
+echo "Verificando base de datos..."
+cd /app/backend
+
+# Crear tablas y cargar datos de ejemplo si la BD está vacía
+python -c "
+from app.core.database import engine, Base
+from app.models import *
+Base.metadata.create_all(bind=engine)
+print('✓ Tablas verificadas/creadas')
+"
+
+# Intentar cargar seed si no hay usuarios
+python -c "
+from app.core.database import SessionLocal
+from app.models.user import User
+db = SessionLocal()
+if not db.query(User).first():
+    print('Cargando datos de ejemplo...')
+    db.close()
+    from app.seed import seed_database
+    seed_database()
+else:
+    print('✓ Base de datos ya tiene datos')
+    db.close()
+"
 
 echo ""
 echo "Iniciando servicios..."
@@ -241,13 +257,15 @@ RUN mkdir -p /app/backend/uploads /app/backend/logs /var/log/supervisor && \
 EXPOSE 80
 
 # Variables de entorno por defecto
-ENV NODE_ENV=production \
+ENV PYTHONPATH=/app/backend \
+    PYTHONUNBUFFERED=1 \
     PORT=3001 \
-    CORS_ORIGIN=http://localhost
+    CORS_ORIGINS=http://localhost \
+    AUTO_CREATE_TABLES=true
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/api/health || exit 1
+    CMD curl -f http://localhost/api/health || exit 1
 
 # Punto de entrada
 ENTRYPOINT ["/app/entrypoint.sh"]

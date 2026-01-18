@@ -5,10 +5,10 @@ Sistema completo de punto de venta (POS) para tiendas de ropa y accesorios. Incl
 ## Stack Tecnológico
 
 - **Frontend**: React 18 + TypeScript + Vite + TailwindCSS + React Query
-- **Backend**: Node.js + Express + TypeScript + Prisma ORM
+- **Backend**: Python 3.11 + FastAPI + SQLAlchemy ORM
 - **Base de Datos**: PostgreSQL 16
 - **Autenticación**: JWT con refresh tokens
-- **PDF**: PDFKit para generación de recibos
+- **PDF**: ReportLab para generación de recibos
 - **Docker**: Docker Compose para desarrollo y producción
 
 ## Características Principales
@@ -88,20 +88,19 @@ cd backend
 # Copiar archivo de entorno
 cp .env.example .env
 
+# Crear entorno virtual (opcional pero recomendado)
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# o: venv\Scripts\activate  # Windows
+
 # Instalar dependencias
-npm install
+pip install -r requirements.txt
 
-# Generar cliente Prisma
-npm run db:generate
-
-# Ejecutar migraciones
-npm run db:migrate
-
-# Cargar datos de ejemplo
-npm run db:seed
+# Cargar datos de ejemplo (opcional)
+python -m app.seed
 
 # Iniciar en modo desarrollo
-npm run dev
+uvicorn app.main:app --reload --port 3001
 ```
 
 4. **Configurar Frontend**
@@ -182,19 +181,20 @@ docker run -d \
 ```
 tienda/
 ├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma      # Modelo de datos
-│   │   └── seed.ts            # Datos de ejemplo
-│   ├── src/
-│   │   ├── config/            # Configuración
-│   │   ├── controllers/       # Controladores HTTP
-│   │   ├── middleware/        # Middlewares
-│   │   ├── routes/            # Rutas API
+│   ├── app/
+│   │   ├── api/               # Endpoints API
+│   │   │   ├── routes/        # Rutas por módulo
+│   │   │   └── deps.py        # Dependencias
+│   │   ├── core/              # Configuración
+│   │   │   ├── config.py      # Settings
+│   │   │   ├── database.py    # SQLAlchemy
+│   │   │   └── security.py    # JWT/Passwords
+│   │   ├── models/            # Modelos SQLAlchemy
+│   │   ├── schemas/           # Schemas Pydantic
 │   │   ├── services/          # Lógica de negocio
-│   │   ├── types/             # Tipos TypeScript
-│   │   └── index.ts           # Punto de entrada
-│   ├── Dockerfile
-│   └── package.json
+│   │   ├── main.py            # Punto de entrada
+│   │   └── seed.py            # Datos de ejemplo
+│   └── requirements.txt
 ├── frontend/
 │   ├── src/
 │   │   ├── components/        # Componentes React
@@ -322,12 +322,11 @@ tienda/
 
 ## Seguridad
 
-- Contraseñas hasheadas con bcrypt (12 rounds)
+- Contraseñas hasheadas con bcrypt (passlib)
 - JWT con expiración corta (15 min) + refresh tokens (7 días)
-- Rate limiting en endpoints de autenticación
-- Validación de entrada con express-validator
+- Validación de entrada con Pydantic
 - Protección CORS configurada
-- Helmet para headers de seguridad
+- Headers de seguridad en Nginx
 - Borrado lógico para datos críticos
 - Auditoría completa de operaciones
 
