@@ -127,10 +127,19 @@ def list_sales(
         query = query.filter(Sale.user_id == user_id)
 
     if start_date:
-        query = query.filter(Sale.created_at >= start_date)
+        # Si solo viene la fecha sin hora, usar inicio del día
+        if start_date.hour == 0 and start_date.minute == 0 and start_date.second == 0:
+            query = query.filter(Sale.created_at >= start_date)
+        else:
+            query = query.filter(Sale.created_at >= start_date)
 
     if end_date:
-        query = query.filter(Sale.created_at <= end_date)
+        # Si solo viene la fecha sin hora, usar fin del día (23:59:59)
+        if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0:
+            end_of_day = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            query = query.filter(Sale.created_at <= end_of_day)
+        else:
+            query = query.filter(Sale.created_at <= end_date)
 
     total = query.count()
     total_pages = math.ceil(total / page_size)
