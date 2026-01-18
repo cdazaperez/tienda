@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
-import { Product, InventoryMovement } from '../types';
+import { Product, InventoryMovement, PaginatedResponse } from '../types';
 
 export function InventoryPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -23,41 +23,44 @@ export function InventoryPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
 
-  const { data: products, isLoading } = useQuery({
+  const { data: productsData, isLoading } = useQuery({
     queryKey: ['products', searchTerm],
     queryFn: async () => {
       const response = await productApi.getAll({
         search: searchTerm || undefined,
         active: true,
-        limit: 100,
+        page_size: 100,
       });
-      return response.data.data as Product[];
+      return response.data as PaginatedResponse<Product>;
     },
   });
+
+  const products = productsData?.items || [];
 
   const { data: lowStock } = useQuery({
     queryKey: ['low-stock'],
     queryFn: async () => {
       const response = await inventoryApi.getLowStock();
-      return response.data.data as Product[];
+      return response.data as Product[];
     },
   });
 
-  const { data: movements } = useQuery({
+  const { data: movementsData } = useQuery({
     queryKey: ['movements', selectedProduct?.id],
     queryFn: async () => {
-      if (!selectedProduct) return [];
-      const response = await inventoryApi.getMovements(selectedProduct.id, { limit: 20 });
-      return response.data.data as InventoryMovement[];
+      if (!selectedProduct) return { items: [] };
+      const response = await inventoryApi.getMovements(selectedProduct.id, { page_size: 20 });
+      return response.data as { items: InventoryMovement[] };
     },
     enabled: !!selectedProduct,
   });
+
+  const movements = movementsData?.items || [];
 
   const entryMutation = useMutation({
     mutationFn: () =>
       inventoryApi.addEntry(selectedProduct!.id, {
         quantity: parseInt(entryQuantity),
-        unitCost: entryCost ? parseFloat(entryCost) : undefined,
         reason: entryReason || undefined,
       }),
     onSuccess: () => {
@@ -68,15 +71,15 @@ export function InventoryPage() {
       setShowEntryModal(false);
       resetForms();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al registrar entrada');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al registrar entrada');
     },
   });
 
   const adjustMutation = useMutation({
     mutationFn: () =>
       inventoryApi.adjustStock(selectedProduct!.id, {
-        newStock: parseInt(adjustStock),
+        new_stock: parseInt(adjustStock),
         reason: adjustReason,
       }),
     onSuccess: () => {
@@ -87,8 +90,8 @@ export function InventoryPage() {
       setShowAdjustModal(false);
       resetForms();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al ajustar stock');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al ajustar stock');
     },
   });
 
@@ -150,7 +153,7 @@ export function InventoryPage() {
                 key={p.id}
                 className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded text-sm"
               >
-                {p.name}: {p.currentStock} unid.
+                {p.name}: {p.current_stock} unid.
               </span>
             ))}
             {lowStock.length > 5 && (
@@ -212,20 +215,20 @@ export function InventoryPage() {
                       <td>
                         <span
                           className={`font-semibold ${
-                            product.currentStock <= product.minStock
+                            product.current_stock <= product.min_stock
                               ? 'text-red-600'
                               : 'text-gray-900 dark:text-white'
                           }`}
                         >
-                          {product.currentStock}
+                          {product.current_stock}
                         </span>
                         <span className="text-gray-400 text-sm">
                           {' '}
-                          / mín: {product.minStock}
+                          / mín: {product.min_stock}
                         </span>
                       </td>
                       <td>
-                        {product.currentStock <= product.minStock ? (
+                        {product.current_stock <= product.min_stock ? (
                           <span className="badge badge-warning">Bajo</span>
                         ) : (
                           <span className="badge badge-success">OK</span>
@@ -251,7 +254,7 @@ export function InventoryPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedProduct(product);
-                                setAdjustStock(product.currentStock.toString());
+                                setAdjustStock(product.current_stock.toString());
                                 setShowAdjustModal(true);
                               }}
                             >
@@ -300,7 +303,7 @@ export function InventoryPage() {
                         {getMovementLabel(mov.type)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(mov.createdAt).toLocaleString('es-CO')}
+                        {new Date(mov.created_at).toLocaleString('es-CO')}
                       </p>
                       {mov.reason && (
                         <p className="text-xs text-gray-500 mt-1">
@@ -318,7 +321,7 @@ export function InventoryPage() {
                         {mov.quantity}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {mov.previousStock} → {mov.newStock}
+                        {mov.previous_stock} → {mov.new_stock}
                       </p>
                     </div>
                   </div>
@@ -393,7 +396,7 @@ export function InventoryPage() {
             Producto: <strong>{selectedProduct?.name}</strong>
           </p>
           <p className="text-gray-600">
-            Stock actual: <strong>{selectedProduct?.currentStock}</strong>
+            Stock actual: <strong>{selectedProduct?.current_stock}</strong>
           </p>
           <Input
             label="Nuevo Stock *"

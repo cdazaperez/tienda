@@ -135,10 +135,10 @@ export interface StoreConfig {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
-  dark_mode: boolean;
+  dark_mode_default: boolean;
   allow_negative_stock: boolean;
-  max_login_attempts: number;
-  lockout_minutes: number;
+  max_failed_attempts: number;
+  lockout_duration_minutes: number;
   low_stock_threshold?: number;
   receipt_header?: string;
   receipt_footer?: string;

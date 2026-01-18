@@ -111,7 +111,7 @@ export const inventoryApi = {
     end_date?: string;
     type?: string;
     page?: number;
-    limit?: number;
+    page_size?: number;
   }) => api.get(`/inventory/${productId}/movements`, { params }),
   addEntry: (productId: string, data: {
     quantity: number;

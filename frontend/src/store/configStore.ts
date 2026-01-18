@@ -55,7 +55,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const root = document.documentElement;
 
     // Aplicar modo oscuro
-    if (config.dark_mode) {
+    if (config.dark_mode_default) {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');

@@ -3,7 +3,39 @@ import { useQuery } from '@tanstack/react-query';
 import { Calendar, Download, TrendingUp, Package, Users } from 'lucide-react';
 import { reportApi } from '../services/api';
 import { Button } from '../components/ui/Button';
-import { SalesReport } from '../types';
+
+interface ReportData {
+  period: string;
+  start_date: string;
+  end_date: string;
+  summary: {
+    total_sales: number;
+    total_revenue: number;
+    total_tax: number;
+    total_discount: number;
+    average_ticket: number;
+  };
+  payment_methods: Record<string, { count: number; total: number }>;
+  top_products: Array<{
+    id: string;
+    name: string;
+    sku: string;
+    quantity_sold: number;
+    revenue: number;
+  }>;
+  top_sellers: Array<{
+    id: string;
+    name: string;
+    sales_count: number;
+    revenue: number;
+  }>;
+  top_categories: Array<{
+    id: string;
+    name: string;
+    quantity_sold: number;
+    revenue: number;
+  }>;
+}
 
 export function ReportsPage() {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
@@ -30,7 +62,7 @@ export function ReportsPage() {
           );
           break;
       }
-      return response.data.data as SalesReport;
+      return response.data as ReportData;
     },
   });
 
@@ -45,7 +77,7 @@ export function ReportsPage() {
 
   const handleExportCSV = async () => {
     try {
-      const response = await reportApi.exportSalesCSV({ startDate });
+      const response = await reportApi.exportSalesCSV({ period, start_date: startDate });
       const blob = new Blob([response.data], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -118,7 +150,7 @@ export function ReportsPage() {
                 <div>
                   <p className="text-sm text-gray-500">Ingresos Totales</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(report.summary.totalRevenue)}
+                    {formatCurrency(report.summary.total_revenue)}
                   </p>
                 </div>
               </div>
@@ -130,7 +162,7 @@ export function ReportsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Transacciones</p>
-                  <p className="text-2xl font-bold">{report.summary.totalSales}</p>
+                  <p className="text-2xl font-bold">{report.summary.total_sales}</p>
                 </div>
               </div>
             </div>
@@ -142,7 +174,7 @@ export function ReportsPage() {
                 <div>
                   <p className="text-sm text-gray-500">Ticket Promedio</p>
                   <p className="text-2xl font-bold">
-                    {formatCurrency(report.summary.avgTicket)}
+                    {formatCurrency(report.summary.average_ticket)}
                   </p>
                 </div>
               </div>
@@ -157,9 +189,9 @@ export function ReportsPage() {
                 <h3 className="font-semibold">Top Productos</h3>
               </div>
               <div className="card-body">
-                {report.topProducts.length > 0 ? (
+                {report.top_products && report.top_products.length > 0 ? (
                   <div className="space-y-3">
-                    {report.topProducts.map((product, i) => (
+                    {report.top_products.map((product, i) => (
                       <div
                         key={product.id}
                         className="flex items-center justify-between"
@@ -171,7 +203,7 @@ export function ReportsPage() {
                           <div>
                             <p className="font-medium text-sm">{product.name}</p>
                             <p className="text-xs text-gray-500">
-                              {product.quantity} vendidos
+                              {product.quantity_sold} vendidos
                             </p>
                           </div>
                         </div>
@@ -193,9 +225,9 @@ export function ReportsPage() {
                 <h3 className="font-semibold">Top Categorías</h3>
               </div>
               <div className="card-body">
-                {report.topCategories.length > 0 ? (
+                {report.top_categories && report.top_categories.length > 0 ? (
                   <div className="space-y-3">
-                    {report.topCategories.map((cat, i) => (
+                    {report.top_categories.map((cat, i) => (
                       <div
                         key={cat.id}
                         className="flex items-center justify-between"
@@ -207,7 +239,7 @@ export function ReportsPage() {
                           <div>
                             <p className="font-medium text-sm">{cat.name}</p>
                             <p className="text-xs text-gray-500">
-                              {cat.quantity} unidades
+                              {cat.quantity_sold} unidades
                             </p>
                           </div>
                         </div>
@@ -229,9 +261,9 @@ export function ReportsPage() {
                 <h3 className="font-semibold">Top Vendedores</h3>
               </div>
               <div className="card-body">
-                {report.topSellers.length > 0 ? (
+                {report.top_sellers && report.top_sellers.length > 0 ? (
                   <div className="space-y-3">
-                    {report.topSellers.map((seller, i) => (
+                    {report.top_sellers.map((seller, i) => (
                       <div
                         key={seller.id}
                         className="flex items-center justify-between"
@@ -243,7 +275,7 @@ export function ReportsPage() {
                           <div>
                             <p className="font-medium text-sm">{seller.name}</p>
                             <p className="text-xs text-gray-500">
-                              {seller.sales} ventas
+                              {seller.sales_count} ventas
                             </p>
                           </div>
                         </div>
