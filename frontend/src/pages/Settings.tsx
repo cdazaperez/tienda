@@ -16,20 +16,22 @@ import { Input } from '../components/ui/Input';
 import { StoreConfig } from '../types';
 
 interface ConfigForm {
-  storeName: string;
-  storeNit?: string;
-  storeAddress?: string;
-  storePhone?: string;
-  storeEmail?: string;
-  primaryColor: string;
-  secondaryColor: string;
-  accentColor: string;
-  darkMode: boolean;
-  allowNegativeStock: boolean;
-  maxLoginAttempts: number;
-  lockoutMinutes: number;
-  defaultTaxRate: number;
-  receiptFooter?: string;
+  store_name: string;
+  store_rut?: string;
+  store_address?: string;
+  store_phone?: string;
+  store_email?: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  dark_mode_default: boolean;
+  allow_negative_stock: boolean;
+  max_failed_attempts: number;
+  lockout_duration_minutes: number;
+  low_stock_threshold: number;
+  receipt_footer?: string;
+  currency_symbol: string;
+  currency_code: string;
 }
 
 export function SettingsPage() {
@@ -41,27 +43,29 @@ export function SettingsPage() {
     queryKey: ['config'],
     queryFn: async () => {
       const response = await configApi.get();
-      return response.data.data as StoreConfig;
+      return response.data as StoreConfig;
     },
   });
 
   const { register, handleSubmit, formState: { errors } } = useForm<ConfigForm>({
     values: config
       ? {
-          storeName: config.storeName,
-          storeNit: config.storeNit || '',
-          storeAddress: config.storeAddress || '',
-          storePhone: config.storePhone || '',
-          storeEmail: config.storeEmail || '',
-          primaryColor: config.primaryColor,
-          secondaryColor: config.secondaryColor,
-          accentColor: config.accentColor,
-          darkMode: config.darkMode,
-          allowNegativeStock: config.allowNegativeStock,
-          maxLoginAttempts: config.maxLoginAttempts,
-          lockoutMinutes: config.lockoutMinutes,
-          defaultTaxRate: parseFloat(config.defaultTaxRate),
-          receiptFooter: config.receiptFooter || '',
+          store_name: config.store_name,
+          store_rut: config.store_rut || '',
+          store_address: config.store_address || '',
+          store_phone: config.store_phone || '',
+          store_email: config.store_email || '',
+          primary_color: config.primary_color,
+          secondary_color: config.secondary_color,
+          accent_color: config.accent_color,
+          dark_mode_default: config.dark_mode,
+          allow_negative_stock: config.allow_negative_stock,
+          max_failed_attempts: config.max_login_attempts,
+          lockout_duration_minutes: config.lockout_minutes,
+          low_stock_threshold: config.low_stock_threshold || 10,
+          receipt_footer: config.receipt_footer || '',
+          currency_symbol: config.currency_symbol || '$',
+          currency_code: config.currency_code || 'COP',
         }
       : undefined,
   });
@@ -71,10 +75,10 @@ export function SettingsPage() {
     onSuccess: (response) => {
       toast.success('Configuración guardada');
       queryClient.invalidateQueries({ queryKey: ['config'] });
-      setConfig(response.data.data);
+      setConfig(response.data);
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al guardar');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al guardar');
     },
   });
 
@@ -83,10 +87,10 @@ export function SettingsPage() {
     onSuccess: (response) => {
       toast.success('Logo actualizado');
       queryClient.invalidateQueries({ queryKey: ['config'] });
-      setConfig({ logoUrl: response.data.data.logoUrl });
+      setConfig({ logo_url: response.data.logo_url });
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al subir logo');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al subir logo');
     },
   });
 
@@ -137,9 +141,9 @@ export function SettingsPage() {
               <label className="label">Logo de la Tienda</label>
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex items-center justify-center overflow-hidden">
-                  {config?.logoUrl ? (
+                  {config?.logo_url ? (
                     <img
-                      src={config.logoUrl}
+                      src={config.logo_url}
                       alt="Logo"
                       className="w-full h-full object-contain"
                     />
@@ -174,29 +178,41 @@ export function SettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Nombre de la Tienda"
-                error={errors.storeName?.message}
-                {...register('storeName', { required: 'Nombre requerido' })}
+                error={errors.store_name?.message}
+                {...register('store_name', { required: 'Nombre requerido' })}
               />
               <Input
-                label="NIT / Identificación"
-                {...register('storeNit')}
+                label="NIT / RUT / Identificación"
+                {...register('store_rut')}
               />
             </div>
 
             <Input
               label="Dirección"
-              {...register('storeAddress')}
+              {...register('store_address')}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Teléfono"
-                {...register('storePhone')}
+                {...register('store_phone')}
               />
               <Input
                 label="Email"
                 type="email"
-                {...register('storeEmail')}
+                {...register('store_email')}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Símbolo de Moneda"
+                {...register('currency_symbol')}
+              />
+              <Input
+                label="Código de Moneda"
+                placeholder="COP, USD, etc."
+                {...register('currency_code')}
               />
             </div>
 
@@ -206,7 +222,7 @@ export function SettingsPage() {
                 className="input"
                 rows={2}
                 placeholder="¡Gracias por su compra!"
-                {...register('receiptFooter')}
+                {...register('receipt_footer')}
               />
             </div>
           </div>
@@ -226,12 +242,12 @@ export function SettingsPage() {
                   <input
                     type="color"
                     className="w-10 h-10 rounded cursor-pointer"
-                    {...register('primaryColor')}
+                    {...register('primary_color')}
                   />
                   <input
                     type="text"
                     className="input flex-1"
-                    {...register('primaryColor')}
+                    {...register('primary_color')}
                   />
                 </div>
               </div>
@@ -241,12 +257,12 @@ export function SettingsPage() {
                   <input
                     type="color"
                     className="w-10 h-10 rounded cursor-pointer"
-                    {...register('secondaryColor')}
+                    {...register('secondary_color')}
                   />
                   <input
                     type="text"
                     className="input flex-1"
-                    {...register('secondaryColor')}
+                    {...register('secondary_color')}
                   />
                 </div>
               </div>
@@ -256,12 +272,12 @@ export function SettingsPage() {
                   <input
                     type="color"
                     className="w-10 h-10 rounded cursor-pointer"
-                    {...register('accentColor')}
+                    {...register('accent_color')}
                   />
                   <input
                     type="text"
                     className="input flex-1"
-                    {...register('accentColor')}
+                    {...register('accent_color')}
                   />
                 </div>
               </div>
@@ -272,10 +288,10 @@ export function SettingsPage() {
                 type="checkbox"
                 id="darkMode"
                 className="w-4 h-4 rounded"
-                {...register('darkMode')}
+                {...register('dark_mode_default')}
               />
               <label htmlFor="darkMode" className="text-sm">
-                Modo Oscuro
+                Modo Oscuro por defecto
               </label>
             </div>
           </div>
@@ -285,7 +301,7 @@ export function SettingsPage() {
         <div className="card">
           <div className="card-header flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary-600" />
-            <h2 className="font-semibold">Seguridad y Negocio</h2>
+            <h2 className="font-semibold">Seguridad e Inventario</h2>
           </div>
           <div className="card-body space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -294,22 +310,20 @@ export function SettingsPage() {
                 type="number"
                 min={1}
                 max={20}
-                {...register('maxLoginAttempts', { valueAsNumber: true })}
+                {...register('max_failed_attempts', { valueAsNumber: true })}
               />
               <Input
                 label="Minutos de bloqueo"
                 type="number"
                 min={1}
                 max={1440}
-                {...register('lockoutMinutes', { valueAsNumber: true })}
+                {...register('lockout_duration_minutes', { valueAsNumber: true })}
               />
               <Input
-                label="Tasa de impuesto por defecto"
+                label="Umbral de stock bajo"
                 type="number"
-                step="0.01"
                 min={0}
-                max={1}
-                {...register('defaultTaxRate', { valueAsNumber: true })}
+                {...register('low_stock_threshold', { valueAsNumber: true })}
               />
             </div>
 
@@ -318,7 +332,7 @@ export function SettingsPage() {
                 type="checkbox"
                 id="allowNegativeStock"
                 className="w-4 h-4 rounded"
-                {...register('allowNegativeStock')}
+                {...register('allow_negative_stock')}
               />
               <label htmlFor="allowNegativeStock" className="text-sm">
                 Permitir stock negativo (solo admins)

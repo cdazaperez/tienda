@@ -127,7 +127,7 @@ export interface ReturnItem {
 export interface StoreConfig {
   id: string;
   store_name: string;
-  store_nit?: string;
+  store_rut?: string;
   store_address?: string;
   store_phone?: string;
   store_email?: string;
@@ -139,8 +139,11 @@ export interface StoreConfig {
   allow_negative_stock: boolean;
   max_login_attempts: number;
   lockout_minutes: number;
-  default_tax_rate: string;
+  low_stock_threshold?: number;
+  receipt_header?: string;
   receipt_footer?: string;
+  currency_symbol?: string;
+  currency_code?: string;
 }
 
 export interface AuditLog {

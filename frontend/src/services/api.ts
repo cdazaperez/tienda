@@ -79,7 +79,7 @@ export const categoryApi = {
   getById: (id: string) => api.get(`/categories/${id}`),
   create: (data: { name: string; description?: string }) =>
     api.post('/categories', data),
-  update: (id: string, data: { name?: string; description?: string; isActive?: boolean }) =>
+  update: (id: string, data: { name?: string; description?: string; is_active?: boolean }) =>
     api.put(`/categories/${id}`, data),
   delete: (id: string) => api.delete(`/categories/${id}`),
 };
@@ -88,11 +88,11 @@ export const categoryApi = {
 export const productApi = {
   getAll: (params?: {
     page?: number;
-    limit?: number;
+    page_size?: number;
     search?: string;
-    categoryId?: string;
+    category_id?: string;
     active?: boolean;
-    lowStock?: boolean;
+    low_stock?: boolean;
   }) => api.get('/products', { params }),
   search: (q: string) => api.get('/products/search', { params: { q } }),
   getById: (id: string) => api.get(`/products/${id}`),
@@ -206,7 +206,7 @@ export const configApi = {
   update: (data: Record<string, unknown>) => api.put('/config', data),
   uploadLogo: (file: File) => {
     const formData = new FormData();
-    formData.append('logo', file);
+    formData.append('file', file);
     return api.post('/config/logo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });

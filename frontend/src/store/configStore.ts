@@ -20,7 +20,6 @@ function hexToRgb(hex: string): string {
 
 // Función para generar paleta de colores
 function generateColorPalette(baseHex: string): Record<string, string> {
-  // Esto es una simplificación; en producción usarías una librería como chroma.js
   const rgb = hexToRgb(baseHex);
   const [r, g, b] = rgb.split(' ').map(Number);
 
@@ -56,32 +55,32 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const root = document.documentElement;
 
     // Aplicar modo oscuro
-    if (config.darkMode) {
+    if (config.dark_mode) {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
 
     // Aplicar colores
-    if (config.primaryColor) {
-      const palette = generateColorPalette(config.primaryColor);
-      root.style.setProperty('--color-primary', hexToRgb(config.primaryColor));
+    if (config.primary_color) {
+      const palette = generateColorPalette(config.primary_color);
+      root.style.setProperty('--color-primary', hexToRgb(config.primary_color));
       Object.entries(palette).forEach(([key, value]) => {
         root.style.setProperty(`--color-primary-${key}`, value);
       });
     }
 
-    if (config.accentColor) {
-      root.style.setProperty('--color-accent', hexToRgb(config.accentColor));
+    if (config.accent_color) {
+      root.style.setProperty('--color-accent', hexToRgb(config.accent_color));
     }
 
-    if (config.secondaryColor) {
-      root.style.setProperty('--color-secondary', hexToRgb(config.secondaryColor));
+    if (config.secondary_color) {
+      root.style.setProperty('--color-secondary', hexToRgb(config.secondary_color));
     }
 
     // Actualizar título de la página
-    if (config.storeName) {
-      document.title = `${config.storeName} - Sistema POS`;
+    if (config.store_name) {
+      document.title = `${config.store_name} - Sistema POS`;
     }
   },
 }));
