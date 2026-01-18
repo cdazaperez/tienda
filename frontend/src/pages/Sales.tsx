@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Search, Eye, XCircle, Printer, RotateCcw } from 'lucide-react';
+import { Search, Eye, XCircle, Printer } from 'lucide-react';
 import { saleApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { Sale } from '../types';
+import { Sale, PaginatedResponse } from '../types';
 
 export function SalesPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,8 +21,8 @@ export function SalesPage() {
   const { data: salesData, isLoading } = useQuery({
     queryKey: ['sales'],
     queryFn: async () => {
-      const response = await saleApi.getAll({ limit: 100 });
-      return response.data;
+      const response = await saleApi.getAll({ page_size: 100 });
+      return response.data as PaginatedResponse<Sale>;
     },
   });
 
@@ -31,11 +31,12 @@ export function SalesPage() {
     onSuccess: () => {
       toast.success('Venta anulada');
       queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-report'] });
       setShowVoidModal(false);
       setVoidReason('');
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || 'Error al anular venta');
+    onError: (error: { response?: { data?: { detail?: string } } }) => {
+      toast.error(error.response?.data?.detail || 'Error al anular venta');
     },
   });
 
@@ -54,8 +55,10 @@ export function SalesPage() {
         return <span className="badge badge-success">Completada</span>;
       case 'VOIDED':
         return <span className="badge badge-danger">Anulada</span>;
-      case 'PARTIAL_RETURN':
+      case 'PARTIALLY_RETURNED':
         return <span className="badge badge-warning">Devolución Parcial</span>;
+      case 'FULLY_RETURNED':
+        return <span className="badge badge-info">Devuelta</span>;
       default:
         return <span className="badge">{status}</span>;
     }
@@ -71,11 +74,21 @@ export function SalesPage() {
     return methods[method] || method;
   };
 
-  const handlePrint = (saleId: string) => {
-    window.open(`/api/sales/${saleId}/receipt/html?print=true`, '_blank');
+  const handlePrint = async (saleId: string) => {
+    try {
+      const response = await saleApi.getReceiptHTML(saleId);
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(response.data);
+        printWindow.document.close();
+        printWindow.focus();
+      }
+    } catch {
+      toast.error('Error al obtener el recibo');
+    }
   };
 
-  const sales = salesData?.data as Sale[] | undefined;
+  const sales = salesData?.items || [];
 
   return (
     <div className="space-y-6">
@@ -127,29 +140,27 @@ export function SalesPage() {
                 sales
                   .filter((s) =>
                     searchTerm
-                      ? s.receiptNumber.toString().includes(searchTerm)
+                      ? s.receipt_number.toString().includes(searchTerm)
                       : true
                   )
                   .map((sale) => (
                     <tr key={sale.id}>
-                      <td className="font-semibold">#{sale.receiptNumber}</td>
+                      <td className="font-semibold">#{sale.receipt_number}</td>
                       <td>
-                        {new Date(sale.createdAt).toLocaleDateString('es-CO')}{' '}
+                        {new Date(sale.created_at).toLocaleDateString('es-CO')}{' '}
                         <span className="text-gray-500">
-                          {new Date(sale.createdAt).toLocaleTimeString('es-CO', {
+                          {new Date(sale.created_at).toLocaleTimeString('es-CO', {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
                         </span>
                       </td>
-                      <td>
-                        {sale.user?.firstName} {sale.user?.lastName}
-                      </td>
-                      <td>{sale.items.length}</td>
+                      <td>{sale.user_name || 'N/A'}</td>
+                      <td>{sale.items?.length || 0}</td>
                       <td className="font-semibold text-green-600">
                         {formatCurrency(sale.total)}
                       </td>
-                      <td>{getPaymentMethod(sale.paymentMethod)}</td>
+                      <td>{getPaymentMethod(sale.payment_method)}</td>
                       <td>{getStatusBadge(sale.status)}</td>
                       <td>
                         <div className="flex items-center gap-1">
@@ -202,7 +213,7 @@ export function SalesPage() {
       <Modal
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
-        title={`Venta #${selectedSale?.receiptNumber}`}
+        title={`Venta #${selectedSale?.receipt_number}`}
         size="lg"
       >
         {selectedSale && (
@@ -211,13 +222,13 @@ export function SalesPage() {
               <div>
                 <p className="text-gray-500">Fecha</p>
                 <p className="font-medium">
-                  {new Date(selectedSale.createdAt).toLocaleString('es-CO')}
+                  {new Date(selectedSale.created_at).toLocaleString('es-CO')}
                 </p>
               </div>
               <div>
                 <p className="text-gray-500">Vendedor</p>
                 <p className="font-medium">
-                  {selectedSale.user?.firstName} {selectedSale.user?.lastName}
+                  {selectedSale.user_name || 'N/A'}
                 </p>
               </div>
               <div>
@@ -227,7 +238,7 @@ export function SalesPage() {
               <div>
                 <p className="text-gray-500">Método de Pago</p>
                 <p className="font-medium">
-                  {getPaymentMethod(selectedSale.paymentMethod)}
+                  {getPaymentMethod(selectedSale.payment_method)}
                 </p>
               </div>
             </div>
@@ -235,17 +246,17 @@ export function SalesPage() {
             <div className="border-t pt-4">
               <h4 className="font-semibold mb-3">Items</h4>
               <div className="space-y-2">
-                {selectedSale.items.map((item) => (
+                {selectedSale.items?.map((item) => (
                   <div
                     key={item.id}
                     className="flex justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
                   >
                     <div>
-                      <p className="font-medium">{item.productName}</p>
+                      <p className="font-medium">{item.product_name}</p>
                       <p className="text-sm text-gray-500">
-                        {item.quantity} x {formatCurrency(item.unitPrice)}
-                        {parseFloat(item.discountPercent) > 0 &&
-                          ` (-${item.discountPercent}%)`}
+                        {item.quantity} x {formatCurrency(item.unit_price)}
+                        {parseFloat(item.discount_percent) > 0 &&
+                          ` (-${item.discount_percent}%)`}
                       </p>
                     </div>
                     <p className="font-semibold">{formatCurrency(item.total)}</p>
@@ -259,16 +270,16 @@ export function SalesPage() {
                 <span>Subtotal</span>
                 <span>{formatCurrency(selectedSale.subtotal)}</span>
               </div>
-              {parseFloat(selectedSale.discountAmount) > 0 && (
+              {parseFloat(selectedSale.discount_amount) > 0 && (
                 <div className="flex justify-between text-orange-600">
                   <span>Descuento</span>
-                  <span>-{formatCurrency(selectedSale.discountAmount)}</span>
+                  <span>-{formatCurrency(selectedSale.discount_amount)}</span>
                 </div>
               )}
-              {parseFloat(selectedSale.taxAmount) > 0 && (
+              {parseFloat(selectedSale.tax_amount) > 0 && (
                 <div className="flex justify-between">
                   <span>Impuestos</span>
-                  <span>{formatCurrency(selectedSale.taxAmount)}</span>
+                  <span>{formatCurrency(selectedSale.tax_amount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t">
@@ -277,6 +288,16 @@ export function SalesPage() {
                   {formatCurrency(selectedSale.total)}
                 </span>
               </div>
+              <div className="flex justify-between pt-2">
+                <span>Monto Pagado</span>
+                <span>{formatCurrency(selectedSale.amount_paid)}</span>
+              </div>
+              {parseFloat(selectedSale.change_amount) > 0 && (
+                <div className="flex justify-between">
+                  <span>Cambio</span>
+                  <span>{formatCurrency(selectedSale.change_amount)}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
@@ -301,7 +322,7 @@ export function SalesPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-600">
-            ¿Está seguro de anular la venta <strong>#{selectedSale?.receiptNumber}</strong>?
+            ¿Está seguro de anular la venta <strong>#{selectedSale?.receipt_number}</strong>?
           </p>
           <p className="text-gray-600">
             Total: <strong>{selectedSale && formatCurrency(selectedSale.total)}</strong>

@@ -13,22 +13,33 @@ import { useAuthStore } from '../store/authStore';
 import { Product } from '../types';
 
 interface DailyReport {
-  date: string;
+  period: string;
+  start_date: string;
+  end_date: string;
   summary: {
     total_sales: number;
-    completed_sales: number;
-    voided_sales: number;
     total_revenue: number;
-    total_cost: number;
-    gross_profit: number;
-    profit_margin: number;
     total_tax: number;
-    avg_sale: number;
+    total_discount: number;
+    average_ticket: number;
   };
+  payment_methods: Record<string, { count: number; total: number }>;
   top_products: Array<{
-    product_id: string;
-    product_name: string;
-    product_sku: string;
+    id: string;
+    name: string;
+    sku: string;
+    quantity_sold: number;
+    revenue: number;
+  }>;
+  top_sellers: Array<{
+    id: string;
+    name: string;
+    sales_count: number;
+    revenue: number;
+  }>;
+  top_categories: Array<{
+    id: string;
+    name: string;
     quantity_sold: number;
     revenue: number;
   }>;
@@ -92,6 +103,7 @@ export function DashboardPage() {
       const response = await reportApi.getDaily();
       return response.data as DailyReport;
     },
+    enabled: isAdmin, // Only fetch if admin
   });
 
   const { data: lowStock } = useQuery({
@@ -100,6 +112,7 @@ export function DashboardPage() {
       const response = await inventoryApi.getLowStock();
       return response.data as Product[];
     },
+    enabled: isAdmin, // Only fetch if admin
   });
 
   const formatCurrency = (value: string | number) => {
@@ -119,125 +132,148 @@ export function DashboardPage() {
           ¡Bienvenido, {user?.first_name}!
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Aquí tienes un resumen de tu negocio hoy
+          {isAdmin
+            ? 'Aquí tienes un resumen de tu negocio hoy'
+            : 'Bienvenido al sistema de punto de venta'}
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Ventas de Hoy"
-          value={formatCurrency(dailyReport?.summary?.total_revenue || 0)}
-          icon={DollarSign}
-          color="bg-green-500"
-        />
-        <StatCard
-          title="Transacciones"
-          value={dailyReport?.summary?.total_sales || 0}
-          icon={ShoppingCart}
-          color="bg-blue-500"
-        />
-        <StatCard
-          title="Ticket Promedio"
-          value={formatCurrency(dailyReport?.summary?.avg_sale || 0)}
-          icon={TrendingUp}
-          color="bg-purple-500"
-        />
-        <StatCard
-          title="Productos Bajo Stock"
-          value={lowStock?.length || 0}
-          icon={AlertTriangle}
-          color="bg-orange-500"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Products */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Package className="w-5 h-5" />
-              Top Productos del Día
-            </h2>
+      {isAdmin ? (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard
+              title="Ventas de Hoy"
+              value={formatCurrency(dailyReport?.summary?.total_revenue || 0)}
+              icon={DollarSign}
+              color="bg-green-500"
+            />
+            <StatCard
+              title="Transacciones"
+              value={dailyReport?.summary?.total_sales || 0}
+              icon={ShoppingCart}
+              color="bg-blue-500"
+            />
+            <StatCard
+              title="Ticket Promedio"
+              value={formatCurrency(dailyReport?.summary?.average_ticket || 0)}
+              icon={TrendingUp}
+              color="bg-purple-500"
+            />
+            <StatCard
+              title="Productos Bajo Stock"
+              value={lowStock?.length || 0}
+              icon={AlertTriangle}
+              color="bg-orange-500"
+            />
           </div>
-          <div className="card-body">
-            {dailyReport?.top_products && dailyReport.top_products.length > 0 ? (
-              <div className="space-y-3">
-                {dailyReport.top_products.slice(0, 5).map((product, index) => (
-                  <div
-                    key={product.product_id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 flex items-center justify-center bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 rounded-full text-sm font-medium">
-                        {index + 1}
-                      </span>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {product.product_name}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {product.quantity_sold} vendidos
-                        </p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Products */}
+            <div className="card">
+              <div className="card-header">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Package className="w-5 h-5" />
+                  Top Productos del Día
+                </h2>
+              </div>
+              <div className="card-body">
+                {dailyReport?.top_products && dailyReport.top_products.length > 0 ? (
+                  <div className="space-y-3">
+                    {dailyReport.top_products.slice(0, 5).map((product, index) => (
+                      <div
+                        key={product.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 flex items-center justify-center bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 rounded-full text-sm font-medium">
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {product.name}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {product.quantity_sold} vendidos
+                            </p>
+                          </div>
+                        </div>
+                        <span className="font-semibold text-green-600 dark:text-green-400">
+                          {formatCurrency(product.revenue)}
+                        </span>
                       </div>
-                    </div>
-                    <span className="font-semibold text-green-600 dark:text-green-400">
-                      {formatCurrency(product.revenue)}
-                    </span>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                    No hay ventas registradas hoy
+                  </p>
+                )}
               </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                No hay ventas registradas hoy
-              </p>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Low Stock Alert */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
-              Alertas de Stock Bajo
-            </h2>
-          </div>
-          <div className="card-body">
-            {lowStock && lowStock.length > 0 ? (
-              <div className="space-y-3">
-                {lowStock.slice(0, 5).map((product) => (
-                  <div
-                    key={product.id}
-                    className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {product.name}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        SKU: {product.sku}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-orange-600 dark:text-orange-400">
-                        {product.current_stock} unidades
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Mín: {product.min_stock}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            {/* Low Stock Alert */}
+            <div className="card">
+              <div className="card-header">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  Alertas de Stock Bajo
+                </h2>
               </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                No hay productos con stock bajo
-              </p>
-            )}
+              <div className="card-body">
+                {lowStock && lowStock.length > 0 ? (
+                  <div className="space-y-3">
+                    {lowStock.slice(0, 5).map((product) => (
+                      <div
+                        key={product.id}
+                        className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {product.name}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            SKU: {product.sku}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-orange-600 dark:text-orange-400">
+                            {product.current_stock} unidades
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Mín: {product.min_stock}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                    No hay productos con stock bajo
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
+        </>
+      ) : (
+        // Seller view
+        <div className="card p-8 text-center">
+          <ShoppingCart className="w-16 h-16 mx-auto text-primary-500 mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Punto de Venta
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            Dirígete al módulo POS para registrar ventas
+          </p>
+          <a
+            href="/pos"
+            className="inline-flex items-center justify-center px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+          >
+            Ir al POS
+          </a>
         </div>
-      </div>
+      )}
     </div>
   );
 }

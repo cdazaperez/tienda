@@ -136,11 +136,11 @@ export const saleApi = {
   }) => api.post('/sales', data),
   getAll: (params?: {
     page?: number;
-    limit?: number;
-    userId?: string;
+    page_size?: number;
+    user_id?: string;
     status?: string;
-    startDate?: string;
-    endDate?: string;
+    start_date?: string;
+    end_date?: string;
   }) => api.get('/sales', { params }),
   getById: (id: string) => api.get(`/sales/${id}`),
   getByReceiptNumber: (receiptNumber: number) =>
@@ -148,7 +148,7 @@ export const saleApi = {
   void: (id: string, reason: string) =>
     api.post(`/sales/${id}/void`, { reason }),
   createReturn: (id: string, data: {
-    items: Array<{ productId: string; quantity: number }>;
+    items: Array<{ sale_item_id: string; quantity: number }>;
     reason: string;
   }) => api.post(`/sales/${id}/return`, data),
   getReceiptPDF: (id: string) =>
