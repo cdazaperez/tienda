@@ -126,10 +126,32 @@ npm run dev
 | Admin | admin@tienda.com | Admin123! |
 | Vendedor | vendedor@tienda.com | Vendedor123! |
 
-### Producción con Docker
+### Producción con Docker (Opción 1: Imagen Única)
+
+La forma más sencilla de ejecutar toda la aplicación:
 
 ```bash
-# Construir y ejecutar todos los servicios
+# Construir y ejecutar con imagen única (recomendado)
+docker-compose -f docker-compose.simple.yml up -d --build
+
+# Ver logs
+docker-compose -f docker-compose.simple.yml logs -f
+
+# Detener
+docker-compose -f docker-compose.simple.yml down
+```
+
+Esto crea:
+- **Un contenedor** con Backend + Frontend + Nginx
+- **PostgreSQL** como base de datos
+- Acceso en **http://localhost**
+
+### Producción con Docker (Opción 2: Servicios Separados)
+
+Para mayor control y escalabilidad:
+
+```bash
+# Construir y ejecutar servicios separados
 docker-compose up -d --build
 
 # Ver logs
@@ -137,6 +159,22 @@ docker-compose logs -f
 
 # Detener
 docker-compose down
+```
+
+### Construir Imagen Docker Manualmente
+
+```bash
+# Desde la raíz del proyecto
+docker build -t tienda-pos:latest .
+
+# Ejecutar con base de datos externa
+docker run -d \
+  --name tienda-app \
+  -p 80:80 \
+  -e DATABASE_URL="postgresql://user:pass@host:5432/tienda_db" \
+  -e JWT_SECRET="tu-secreto-seguro" \
+  -v tienda-uploads:/app/backend/uploads \
+  tienda-pos:latest
 ```
 
 ## Estructura del Proyecto

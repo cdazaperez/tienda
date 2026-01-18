@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+*/node_modules
+
+# Build outputs
+dist
+*/dist
+build
+*/build
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+
+# Environment files (se pasan como variables)
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation (no necesario en imagen)
+*.md
+!README.md
+
+# Docker files (evitar recursión)
+Dockerfile*
+docker-compose*
+
+# Uploads locales
+uploads/*
+!uploads/.gitkeep

@@ -1,0 +1,64 @@
+# =============================================================================
+# Docker Compose - Versión Simplificada (Todo en un contenedor)
+# =============================================================================
+# Uso:
+#   docker-compose -f docker-compose.simple.yml up -d --build
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: tienda_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tienda
+      POSTGRES_PASSWORD: tienda123
+      POSTGRES_DB: tienda_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tienda -d tienda_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tienda_network
+
+  # Aplicación completa (Backend + Frontend)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tienda_app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://tienda:tienda123@postgres:5432/tienda_db?schema=public
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost
+    volumes:
+      - uploads_data:/app/backend/uploads
+      - logs_data:/app/backend/logs
+    ports:
+      - "80:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tienda_network
+
+volumes:
+  postgres_data:
+  uploads_data:
+  logs_data:
+
+networks:
+  tienda_network:
+    driver: bridge
