@@ -100,17 +100,18 @@ export function DashboardPage() {
 
   // Ventas del vendedor (para sellers)
   const { data: mySales } = useQuery({
-    queryKey: ['my-sales-today'],
+    queryKey: ['my-sales-today', user?.id],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
       const response = await saleApi.getAll({
+        user_id: user?.id,
         start_date: today,
         end_date: today,
         page_size: 50,
       });
       return response.data as PaginatedResponse<Sale>;
     },
-    enabled: !isAdmin,
+    enabled: !isAdmin && !!user?.id,
   });
 
   const formatCurrency = (value: string | number) => {

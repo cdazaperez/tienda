@@ -86,15 +86,15 @@ export function Layout({ children }: LayoutProps) {
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-700">
-          {config?.logoUrl ? (
+          {config?.logo_url ? (
             <img
-              src={config.logoUrl}
-              alt={config.storeName || 'Logo'}
+              src={config.logo_url}
+              alt={config.store_name || 'Logo'}
               className="h-10 object-contain"
             />
           ) : (
             <h1 className="text-xl font-bold text-primary-600">
-              {config?.storeName || 'Mi Tienda'}
+              {config?.store_name || 'Mi Tienda'}
             </h1>
           )}
         </div>
@@ -129,7 +129,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {user?.firstName} {user?.lastName}
+                {user?.first_name} {user?.last_name}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {user?.role === 'ADMIN' ? 'Administrador' : 'Vendedor'}

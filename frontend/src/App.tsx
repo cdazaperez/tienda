@@ -65,7 +65,7 @@ function App() {
     queryKey: ['public-config'],
     queryFn: async () => {
       const response = await configApi.getPublic();
-      return response.data.data;
+      return response.data;
     },
     staleTime: Infinity,
   });
