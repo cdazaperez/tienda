@@ -14,12 +14,11 @@ export function AuditPage() {
     queryKey: ['audit', filters],
     queryFn: async () => {
       const response = await auditApi.getAll({
-        ...filters,
         entity: filters.entity || undefined,
         action: filters.action || undefined,
-        limit: 100,
+        page_size: 100,
       });
-      return response.data;
+      return response.data as { items: AuditLog[]; total: number };
     },
   });
 
@@ -48,7 +47,7 @@ export function AuditPage() {
     return 'text-gray-600 bg-gray-50 dark:bg-gray-700';
   };
 
-  const logs = auditData?.data as AuditLog[] | undefined;
+  const logs = auditData?.items;
 
   return (
     <div className="space-y-6">
@@ -120,20 +119,19 @@ export function AuditPage() {
                     <td className="whitespace-nowrap">
                       <div>
                         <p className="font-medium">
-                          {new Date(log.createdAt).toLocaleDateString('es-CO')}
+                          {new Date(log.created_at).toLocaleDateString('es-CO')}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {new Date(log.createdAt).toLocaleTimeString('es-CO')}
+                          {new Date(log.created_at).toLocaleTimeString('es-CO')}
                         </p>
                       </div>
                     </td>
                     <td>
-                      {log.user ? (
+                      {log.user_name ? (
                         <div>
                           <p className="font-medium">
-                            {log.user.firstName} {log.user.lastName}
+                            {log.user_name}
                           </p>
-                          <p className="text-sm text-gray-500">{log.user.email}</p>
                         </div>
                       ) : (
                         <span className="text-gray-400">Sistema</span>
@@ -160,7 +158,7 @@ export function AuditPage() {
                       </p>
                     </td>
                     <td className="text-sm text-gray-500">
-                      {log.ipAddress || '-'}
+                      {log.ip_address || '-'}
                     </td>
                   </tr>
                 ))

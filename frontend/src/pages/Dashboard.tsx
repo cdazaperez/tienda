@@ -7,10 +7,11 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
+  Clock,
 } from 'lucide-react';
-import { reportApi, inventoryApi } from '../services/api';
+import { reportApi, inventoryApi, saleApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { Product } from '../types';
+import { Product, Sale, PaginatedResponse } from '../types';
 
 interface DailyReport {
   period: string;
@@ -49,15 +50,11 @@ function StatCard({
   title,
   value,
   icon: Icon,
-  trend,
-  trendValue,
   color,
 }: {
   title: string;
   value: string | number;
   icon: React.ElementType;
-  trend?: 'up' | 'down';
-  trendValue?: string;
   color: string;
 }) {
   return (
@@ -70,20 +67,6 @@ function StatCard({
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
             {value}
           </p>
-          {trend && trendValue && (
-            <div className="flex items-center mt-2">
-              {trend === 'up' ? (
-                <ArrowUpRight className="w-4 h-4 text-green-500" />
-              ) : (
-                <ArrowDownRight className="w-4 h-4 text-red-500" />
-              )}
-              <span
-                className={`text-sm ${trend === 'up' ? 'text-green-500' : 'text-red-500'}`}
-              >
-                {trendValue}
-              </span>
-            </div>
-          )}
         </div>
         <div className={`p-3 rounded-xl ${color}`}>
           <Icon className="w-6 h-6 text-white" />
@@ -103,7 +86,7 @@ export function DashboardPage() {
       const response = await reportApi.getDaily();
       return response.data as DailyReport;
     },
-    enabled: isAdmin, // Only fetch if admin
+    enabled: isAdmin,
   });
 
   const { data: lowStock } = useQuery({
@@ -112,7 +95,22 @@ export function DashboardPage() {
       const response = await inventoryApi.getLowStock();
       return response.data as Product[];
     },
-    enabled: isAdmin, // Only fetch if admin
+    enabled: isAdmin,
+  });
+
+  // Ventas del vendedor (para sellers)
+  const { data: mySales } = useQuery({
+    queryKey: ['my-sales-today'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await saleApi.getAll({
+        start_date: today,
+        end_date: today,
+        page_size: 50,
+      });
+      return response.data as PaginatedResponse<Sale>;
+    },
+    enabled: !isAdmin,
   });
 
   const formatCurrency = (value: string | number) => {
@@ -122,6 +120,15 @@ export function DashboardPage() {
       currency: 'COP',
       minimumFractionDigits: 0,
     }).format(num);
+  };
+
+  // Calcular estadísticas del vendedor
+  const sellerStats = {
+    totalSales: mySales?.items?.length || 0,
+    totalRevenue: mySales?.items?.reduce((sum, sale) => sum + parseFloat(sale.total), 0) || 0,
+    avgTicket: mySales?.items?.length
+      ? (mySales.items.reduce((sum, sale) => sum + parseFloat(sale.total), 0) / mySales.items.length)
+      : 0,
   };
 
   return (
@@ -134,13 +141,13 @@ export function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           {isAdmin
             ? 'Aquí tienes un resumen de tu negocio hoy'
-            : 'Bienvenido al sistema de punto de venta'}
+            : 'Resumen de tus ventas del día'}
         </p>
       </div>
 
       {isAdmin ? (
         <>
-          {/* Stats */}
+          {/* Admin Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Ventas de Hoy"
@@ -257,22 +264,111 @@ export function DashboardPage() {
           </div>
         </>
       ) : (
-        // Seller view
-        <div className="card p-8 text-center">
-          <ShoppingCart className="w-16 h-16 mx-auto text-primary-500 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Punto de Venta
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">
-            Dirígete al módulo POS para registrar ventas
-          </p>
-          <a
-            href="/pos"
-            className="inline-flex items-center justify-center px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-          >
-            Ir al POS
-          </a>
-        </div>
+        // Seller view - Muestra sus ventas del día
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <StatCard
+              title="Mis Ventas Hoy"
+              value={formatCurrency(sellerStats.totalRevenue)}
+              icon={DollarSign}
+              color="bg-green-500"
+            />
+            <StatCard
+              title="Transacciones"
+              value={sellerStats.totalSales}
+              icon={ShoppingCart}
+              color="bg-blue-500"
+            />
+            <StatCard
+              title="Ticket Promedio"
+              value={formatCurrency(sellerStats.avgTicket)}
+              icon={TrendingUp}
+              color="bg-purple-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Sales */}
+            <div className="card">
+              <div className="card-header flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Mis Ventas Recientes
+                </h2>
+                <a
+                  href="/sales"
+                  className="text-sm text-primary-600 hover:text-primary-700"
+                >
+                  Ver todas
+                </a>
+              </div>
+              <div className="card-body">
+                {mySales?.items && mySales.items.length > 0 ? (
+                  <div className="space-y-3">
+                    {mySales.items.slice(0, 5).map((sale) => (
+                      <div
+                        key={sale.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            #{sale.receipt_number}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {new Date(sale.created_at).toLocaleTimeString('es-CO', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                            {' - '}
+                            {sale.items?.length || 0} items
+                          </p>
+                        </div>
+                        <span className="font-semibold text-green-600 dark:text-green-400">
+                          {formatCurrency(sale.total)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                    No has registrado ventas hoy
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Access */}
+            <div className="card">
+              <div className="card-header">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Acceso Rápido
+                </h2>
+              </div>
+              <div className="card-body">
+                <div className="grid grid-cols-2 gap-4">
+                  <a
+                    href="/pos"
+                    className="flex flex-col items-center justify-center p-6 bg-primary-50 dark:bg-primary-900/20 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+                  >
+                    <ShoppingCart className="w-10 h-10 text-primary-600 mb-2" />
+                    <span className="font-medium text-primary-700 dark:text-primary-400">
+                      Ir al POS
+                    </span>
+                  </a>
+                  <a
+                    href="/sales"
+                    className="flex flex-col items-center justify-center p-6 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                  >
+                    <DollarSign className="w-10 h-10 text-green-600 mb-2" />
+                    <span className="font-medium text-green-700 dark:text-green-400">
+                      Mis Ventas
+                    </span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

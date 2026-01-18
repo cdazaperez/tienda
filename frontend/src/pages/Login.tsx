@@ -51,10 +51,10 @@ export function LoginPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           {/* Logo */}
           <div className="text-center mb-8">
-            {config?.logoUrl ? (
+            {config?.logo_url ? (
               <img
-                src={config.logoUrl}
-                alt={config.storeName || 'Logo'}
+                src={config.logo_url}
+                alt={config.store_name || 'Logo'}
                 className="h-16 mx-auto mb-4"
               />
             ) : (
@@ -63,7 +63,7 @@ export function LoginPage() {
               </div>
             )}
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {config?.storeName || 'Mi Tienda'}
+              {config?.store_name || 'Mi Tienda'}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
               Inicia sesión para continuar
@@ -114,33 +114,6 @@ export function LoginPage() {
               Iniciar Sesión
             </Button>
           </form>
-
-          {/* Demo credentials */}
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-3">
-              Credenciales de demostración:
-            </p>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p className="font-medium text-gray-700 dark:text-gray-300">
-                  Admin
-                </p>
-                <p className="text-gray-500 dark:text-gray-400">
-                  admin@tienda.com
-                </p>
-                <p className="text-gray-500 dark:text-gray-400">Admin123!</p>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p className="font-medium text-gray-700 dark:text-gray-300">
-                  Vendedor
-                </p>
-                <p className="text-gray-500 dark:text-gray-400">
-                  vendedor@tienda.com
-                </p>
-                <p className="text-gray-500 dark:text-gray-400">Vendedor123!</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

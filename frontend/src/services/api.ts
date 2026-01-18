@@ -217,12 +217,12 @@ export const configApi = {
 export const auditApi = {
   getAll: (params?: {
     page?: number;
-    limit?: number;
+    page_size?: number;
     entity?: string;
-    userId?: string;
+    user_id?: string;
     action?: string;
-    startDate?: string;
-    endDate?: string;
+    start_date?: string;
+    end_date?: string;
   }) => api.get('/audit', { params }),
   getByEntity: (entity: string, entityId: string) =>
     api.get(`/audit/${entity}/${entityId}`),
