@@ -75,6 +75,17 @@ def get_sales_report(
     total_tax = db.query(func.sum(Sale.tax_amount)).filter(base_filter).scalar() or Decimal("0")
     total_discount = db.query(func.sum(Sale.discount_amount)).filter(base_filter).scalar() or Decimal("0")
 
+    # Calcular costo total y ganancia
+    total_cost = db.query(
+        func.sum(SaleItem.cost_price * (SaleItem.quantity - SaleItem.returned_qty))
+    ).filter(
+        SaleItem.sale_id.in_(db.query(Sale.id).filter(base_filter))
+    ).scalar() or Decimal("0")
+
+    # Ganancia bruta = Ingresos - Costos (sin incluir impuestos ya que son pass-through)
+    gross_profit = total_revenue - total_cost - total_tax
+    profit_margin = (gross_profit / (total_revenue - total_tax) * 100) if (total_revenue - total_tax) > 0 else Decimal("0")
+
     avg_ticket = total_revenue / total_sales if total_sales > 0 else Decimal("0")
 
     # Ventas por método de pago
@@ -181,8 +192,11 @@ def get_sales_report(
         "summary": {
             "total_sales": total_sales,
             "total_revenue": float(total_revenue),
+            "total_cost": float(total_cost),
             "total_tax": float(total_tax),
             "total_discount": float(total_discount),
+            "gross_profit": float(gross_profit),
+            "profit_margin": float(profit_margin),
             "average_ticket": float(avg_ticket)
         },
         "payment_methods": payment_methods,

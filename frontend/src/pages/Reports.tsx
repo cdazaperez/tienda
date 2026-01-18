@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Download, FileText, TrendingUp, Package, Users } from 'lucide-react';
+import { Calendar, Download, FileText, TrendingUp, Package, Users, DollarSign, Percent } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { reportApi } from '../services/api';
 import { Button } from '../components/ui/Button';
@@ -12,8 +12,11 @@ interface ReportData {
   summary: {
     total_sales: number;
     total_revenue: number;
+    total_cost: number;
     total_tax: number;
     total_discount: number;
+    gross_profit: number;
+    profit_margin: number;
     average_ticket: number;
   };
   payment_methods: Record<string, { count: number; total: number }>;
@@ -167,6 +170,22 @@ export function ReportsPage() {
             </div>
           </div>
 
+          <h2>Rentabilidad</h2>
+          <div class="summary">
+            <div class="summary-card">
+              <div class="label">Ganancia Bruta</div>
+              <div class="value" style="color: ${(report.summary.gross_profit || 0) >= 0 ? '#10b981' : '#ef4444'};">${formatCurrency(report.summary.gross_profit || 0)}</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Margen de Ganancia</div>
+              <div class="value" style="color: #06b6d4;">${(report.summary.profit_margin || 0).toFixed(1)}%</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Costo de Ventas</div>
+              <div class="value" style="color: #f43f5e;">${formatCurrency(report.summary.total_cost || 0)}</div>
+            </div>
+          </div>
+
           <h2>Top Productos</h2>
           <table>
             <thead>
@@ -301,8 +320,8 @@ export function ReportsPage() {
         <div className="text-center py-12 text-gray-500">Cargando reporte...</div>
       ) : report ? (
         <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Summary Cards - Row 1: Ingresos */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="card p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-green-100 dark:bg-green-900 rounded-xl">
@@ -336,6 +355,62 @@ export function ReportsPage() {
                   <p className="text-sm text-gray-500">Ticket Promedio</p>
                   <p className="text-2xl font-bold">
                     {formatCurrency(report.summary.average_ticket)}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="card p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-xl">
+                  <DollarSign className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Impuestos</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {formatCurrency(report.summary.total_tax)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Cards - Row 2: Ganancias */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card p-6 border-l-4 border-emerald-500">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-xl">
+                  <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Ganancia Bruta</p>
+                  <p className={`text-2xl font-bold ${(report.summary.gross_profit || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {formatCurrency(report.summary.gross_profit || 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="card p-6 border-l-4 border-cyan-500">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-cyan-100 dark:bg-cyan-900 rounded-xl">
+                  <Percent className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Margen de Ganancia</p>
+                  <p className={`text-2xl font-bold ${(report.summary.profit_margin || 0) >= 0 ? 'text-cyan-600' : 'text-red-600'}`}>
+                    {(report.summary.profit_margin || 0).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="card p-6 border-l-4 border-rose-500">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-rose-100 dark:bg-rose-900 rounded-xl">
+                  <TrendingUp className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Costo de Ventas</p>
+                  <p className="text-2xl font-bold text-rose-600">
+                    {formatCurrency(report.summary.total_cost || 0)}
                   </p>
                 </div>
               </div>
