@@ -286,7 +286,7 @@ def unlock_admin_account(
     db: Session = Depends(get_db)
 ):
     """
-    Endpoint temporal para desbloquear la cuenta admin.
+    Endpoint temporal para desbloquear la cuenta admin y resetear contraseña.
     IMPORTANTE: Eliminar este endpoint en producción después de usarlo.
     """
     admin = db.query(User).filter(User.email == "admin@tienda.com").first()
@@ -297,10 +297,11 @@ def unlock_admin_account(
             detail="Usuario admin no encontrado"
         )
 
-    # Desbloquear cuenta
+    # Desbloquear cuenta y resetear contraseña
     admin.failed_attempts = 0
     admin.locked_until = None
     admin.is_active = True
+    admin.password_hash = get_password_hash("Admin123!")
 
     # Revocar todos los refresh tokens
     db.query(RefreshToken).filter(
@@ -310,7 +311,8 @@ def unlock_admin_account(
     db.commit()
 
     return {
-        "message": "Cuenta admin desbloqueada exitosamente",
+        "message": "Cuenta admin desbloqueada y contraseña reseteada",
         "email": admin.email,
-        "username": admin.username
+        "username": admin.username,
+        "new_password": "Admin123!"
     }
