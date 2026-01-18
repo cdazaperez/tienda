@@ -31,14 +31,15 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.login(data.email, data.password);
-      const { user, accessToken, refreshToken } = response.data.data;
+      // Backend devuelve: access_token, refresh_token, user
+      const { user, access_token, refresh_token } = response.data;
 
-      setAuth(user, accessToken, refreshToken);
-      toast.success(`¡Bienvenido, ${user.firstName}!`);
+      setAuth(user, access_token, refresh_token);
+      toast.success(`¡Bienvenido, ${user.first_name}!`);
       navigate('/');
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Error al iniciar sesión');
+      const err = error as { response?: { data?: { detail?: string } } };
+      toast.error(err.response?.data?.detail || 'Error al iniciar sesión');
     } finally {
       setIsLoading(false);
     }

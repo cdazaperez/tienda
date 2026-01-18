@@ -36,15 +36,15 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           const response = await axios.post(`${API_URL}/auth/refresh`, {
-            refreshToken,
+            refresh_token: refreshToken,
           });
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+          const { access_token, refresh_token } = response.data;
 
-          useAuthStore.getState().setTokens(accessToken, newRefreshToken);
+          useAuthStore.getState().setTokens(access_token, refresh_token);
 
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+            originalRequest.headers.Authorization = `Bearer ${access_token}`;
           }
 
           return api(originalRequest);
@@ -66,11 +66,10 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
-  logout: (refreshToken?: string) =>
-    api.post('/auth/logout', { refreshToken }),
+  logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
-    api.post('/auth/change-password', { currentPassword, newPassword }),
+    api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword }),
 };
 
 // Categories
@@ -108,19 +107,18 @@ export const productApi = {
 // Inventory
 export const inventoryApi = {
   getMovements: (productId: string, params?: {
-    startDate?: string;
-    endDate?: string;
+    start_date?: string;
+    end_date?: string;
     type?: string;
     page?: number;
     limit?: number;
   }) => api.get(`/inventory/${productId}/movements`, { params }),
   addEntry: (productId: string, data: {
     quantity: number;
-    unitCost?: number;
     reason?: string;
   }) => api.post(`/inventory/${productId}/entry`, data),
   adjustStock: (productId: string, data: {
-    newStock: number;
+    new_stock: number;
     reason: string;
   }) => api.post(`/inventory/${productId}/adjust`, data),
   getLowStock: () => api.get('/inventory/low-stock'),
@@ -130,10 +128,10 @@ export const inventoryApi = {
 // Sales
 export const saleApi = {
   create: (data: {
-    items: Array<{ productId: string; quantity: number; discountPercent?: number }>;
-    paymentMethod: string;
-    amountPaid: number;
-    globalDiscountPercent?: number;
+    items: Array<{ product_id: string; quantity: number; discount_percent?: number }>;
+    payment_method: string;
+    amount_paid: number;
+    discount_percent?: number;
     notes?: string;
   }) => api.post('/sales', data),
   getAll: (params?: {
@@ -190,14 +188,14 @@ export const userApi = {
     email: string;
     username: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     role?: string;
   }) => api.post('/users', data),
   update: (id: string, data: Record<string, unknown>) =>
     api.put(`/users/${id}`, data),
   resetPassword: (id: string, newPassword: string) =>
-    api.post(`/users/${id}/reset-password`, { newPassword }),
+    api.post(`/users/${id}/reset-password`, { new_password: newPassword }),
   toggleActive: (id: string) => api.post(`/users/${id}/toggle-active`),
 };
 

@@ -44,7 +44,7 @@ def get_date_range(period: str, custom_start: Optional[date] = None, custom_end:
 
 @router.get("/sales")
 def get_sales_report(
-    period: str = Query("month", regex="^(today|yesterday|week|month|year|custom)$"),
+    period: str = Query("month", pattern="^(today|yesterday|week|month|year|custom)$"),
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     user_id: Optional[UUID] = None,
@@ -287,7 +287,7 @@ def get_sales_trend(
 
 @router.get("/sales/export/csv")
 def export_sales_csv(
-    period: str = Query("month", regex="^(today|yesterday|week|month|year|custom)$"),
+    period: str = Query("month", pattern="^(today|yesterday|week|month|year|custom)$"),
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     current_user: User = Depends(get_current_admin_user),
