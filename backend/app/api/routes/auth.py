@@ -279,3 +279,38 @@ def change_password(
     )
 
     return {"message": "Contraseña actualizada correctamente"}
+
+
+@router.post("/unlock-admin")
+def unlock_admin_account(
+    db: Session = Depends(get_db)
+):
+    """
+    Endpoint temporal para desbloquear la cuenta admin.
+    IMPORTANTE: Eliminar este endpoint en producción después de usarlo.
+    """
+    admin = db.query(User).filter(User.email == "admin@tienda.com").first()
+
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario admin no encontrado"
+        )
+
+    # Desbloquear cuenta
+    admin.failed_attempts = 0
+    admin.locked_until = None
+    admin.is_active = True
+
+    # Revocar todos los refresh tokens
+    db.query(RefreshToken).filter(
+        RefreshToken.user_id == admin.id
+    ).update({"revoked": True})
+
+    db.commit()
+
+    return {
+        "message": "Cuenta admin desbloqueada exitosamente",
+        "email": admin.email,
+        "username": admin.username
+    }
