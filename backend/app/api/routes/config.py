@@ -1,5 +1,6 @@
 import os
 import uuid
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
@@ -13,7 +14,8 @@ from app.api.deps import get_current_user, get_current_admin_user, get_client_in
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads"
+# Use absolute path for uploads directory (same as main.py)
+UPLOAD_DIR = Path(__file__).parent.parent.parent.parent / "uploads"
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
@@ -129,11 +131,11 @@ async def upload_logo(
         )
 
     # Crear directorio si no existe
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
     # Generar nombre único
     filename = f"logo_{uuid.uuid4().hex}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
+    filepath = UPLOAD_DIR / filename
 
     # Guardar archivo
     with open(filepath, "wb") as f:
@@ -145,10 +147,11 @@ async def upload_logo(
 
     # Eliminar logo anterior si existe
     if old_logo:
-        old_path = old_logo.lstrip("/")
-        if os.path.exists(old_path):
+        old_filename = old_logo.split("/")[-1]
+        old_path = UPLOAD_DIR / old_filename
+        if old_path.exists():
             try:
-                os.remove(old_path)
+                old_path.unlink()
             except:
                 pass
 
@@ -187,10 +190,11 @@ def delete_logo(
     old_logo = config.logo_url
 
     # Eliminar archivo
-    filepath = old_logo.lstrip("/")
-    if os.path.exists(filepath):
+    old_filename = old_logo.split("/")[-1]
+    filepath = UPLOAD_DIR / old_filename
+    if filepath.exists():
         try:
-            os.remove(filepath)
+            filepath.unlink()
         except:
             pass
 
