@@ -89,6 +89,36 @@ async def health_check():
     }
 
 
+# Función para ejecutar migraciones pendientes
+def run_pending_migrations():
+    """Ejecuta migraciones de esquema pendientes"""
+    from sqlalchemy import text
+
+    with engine.connect() as conn:
+        # Verificar y agregar columnas de impuestos si no existen
+        result = conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'store_config'
+            AND column_name IN ('tax_enabled', 'tax_rate', 'tax_name')
+        """))
+        existing_columns = [row[0] for row in result]
+
+        if 'tax_enabled' not in existing_columns:
+            logger.info("Migrando: agregando columna tax_enabled...")
+            conn.execute(text("ALTER TABLE store_config ADD COLUMN tax_enabled BOOLEAN NOT NULL DEFAULT TRUE"))
+
+        if 'tax_rate' not in existing_columns:
+            logger.info("Migrando: agregando columna tax_rate...")
+            conn.execute(text("ALTER TABLE store_config ADD COLUMN tax_rate NUMERIC(5,4) NOT NULL DEFAULT 0.19"))
+
+        if 'tax_name' not in existing_columns:
+            logger.info("Migrando: agregando columna tax_name...")
+            conn.execute(text("ALTER TABLE store_config ADD COLUMN tax_name VARCHAR(50) NOT NULL DEFAULT 'IVA'"))
+
+        conn.commit()
+
+
 # Evento de inicio
 @app.on_event("startup")
 async def startup_event():
@@ -101,6 +131,13 @@ async def startup_event():
         logger.info("Creando tablas de base de datos...")
         Base.metadata.create_all(bind=engine)
         logger.info("Tablas creadas exitosamente")
+
+        # Ejecutar migraciones pendientes
+        try:
+            run_pending_migrations()
+            logger.info("Migraciones ejecutadas exitosamente")
+        except Exception as e:
+            logger.warning(f"Error en migraciones (puede ser normal si ya están aplicadas): {e}")
 
 
 # Evento de cierre
