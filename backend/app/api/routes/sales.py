@@ -317,9 +317,13 @@ def void_sale(
     """Anular una venta (Admin)"""
     client_info = get_client_info(request)
 
-    sale = db.query(Sale).options(joinedload(Sale.items)).filter(Sale.id == sale_id).with_for_update().first()
+    # Primero bloquear la venta sin joinedload (FOR UPDATE no funciona con LEFT OUTER JOIN)
+    sale = db.query(Sale).filter(Sale.id == sale_id).with_for_update().first()
     if not sale:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venta no encontrada")
+
+    # Cargar items por separado
+    sale = db.query(Sale).options(joinedload(Sale.items)).filter(Sale.id == sale_id).first()
 
     if sale.status == SaleStatus.VOIDED:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La venta ya está anulada")
@@ -375,9 +379,13 @@ def create_return(
     """Crear devolución parcial o total (Admin)"""
     client_info = get_client_info(request)
 
-    sale = db.query(Sale).options(joinedload(Sale.items)).filter(Sale.id == sale_id).with_for_update().first()
+    # Primero bloquear la venta sin joinedload (FOR UPDATE no funciona con LEFT OUTER JOIN)
+    sale = db.query(Sale).filter(Sale.id == sale_id).with_for_update().first()
     if not sale:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venta no encontrada")
+
+    # Cargar items por separado
+    sale = db.query(Sale).options(joinedload(Sale.items)).filter(Sale.id == sale_id).first()
 
     if sale.status == SaleStatus.VOIDED:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se puede devolver una venta anulada")
