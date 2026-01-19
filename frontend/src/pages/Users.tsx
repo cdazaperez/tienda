@@ -32,7 +32,7 @@ export function UsersPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await userApi.getAll();
+      const response = await userApi.getAll({ include_inactive: true });
       return response.data as User[];
     },
   });

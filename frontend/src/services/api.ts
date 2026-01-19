@@ -181,7 +181,7 @@ export const reportApi = {
 
 // Users
 export const userApi = {
-  getAll: (params?: { active?: boolean; role?: string }) =>
+  getAll: (params?: { active?: boolean; role?: string; include_inactive?: boolean }) =>
     api.get('/users', { params }),
   getById: (id: string) => api.get(`/users/${id}`),
   create: (data: {
