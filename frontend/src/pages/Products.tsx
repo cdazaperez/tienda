@@ -27,7 +27,6 @@ interface ProductForm {
   color?: string;
   sale_price: number;
   cost_price?: number;
-  tax_rate?: number;
   unit: string;
   min_stock: number;
   initial_stock: number;
@@ -121,7 +120,6 @@ export function ProductsPage() {
     setValue('color', product.color || '');
     setValue('sale_price', parseFloat(product.sale_price));
     setValue('cost_price', product.cost_price ? parseFloat(product.cost_price) : undefined);
-    setValue('tax_rate', parseFloat(product.tax_rate));
     setValue('unit', product.unit);
     setValue('min_stock', product.min_stock);
     setValue('initial_stock', product.current_stock);
@@ -369,13 +367,6 @@ export function ProductsPage() {
             <Input
               label="Color"
               {...register('color')}
-            />
-            <Input
-              label="Tasa de Impuesto"
-              type="number"
-              step="0.01"
-              defaultValue={0.19}
-              {...register('tax_rate', { valueAsNumber: true })}
             />
           </div>
 

@@ -18,6 +18,7 @@ class SaleCreate(BaseModel):
     payment_method: PaymentMethod
     amount_paid: Decimal = Field(..., ge=0)
     discount_percent: Decimal = Field(default=Decimal("0"), ge=0, le=100)
+    apply_tax: Optional[bool] = None  # None = usar config, True/False = forzar
     notes: Optional[str] = None
 
 

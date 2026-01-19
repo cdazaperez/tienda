@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, Field, EmailStr
@@ -13,6 +14,9 @@ class StoreConfigUpdate(BaseModel):
     primary_color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')
     secondary_color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')
     accent_color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$')
+    tax_enabled: Optional[bool] = None
+    tax_rate: Optional[Decimal] = Field(None, ge=0, le=1)
+    tax_name: Optional[str] = Field(None, max_length=50)
     receipt_header: Optional[str] = None
     receipt_footer: Optional[str] = None
     max_failed_attempts: Optional[int] = Field(None, ge=1, le=20)
@@ -35,6 +39,9 @@ class StoreConfigResponse(BaseModel):
     primary_color: str
     secondary_color: str
     accent_color: str
+    tax_enabled: bool
+    tax_rate: Decimal
+    tax_name: str
     receipt_header: Optional[str]
     receipt_footer: Optional[str]
     max_failed_attempts: int
@@ -58,6 +65,9 @@ class StoreConfigPublic(BaseModel):
     primary_color: str
     secondary_color: str
     accent_color: str
+    tax_enabled: bool
+    tax_rate: Decimal
+    tax_name: str
     currency_symbol: str
     currency_code: str
     dark_mode_default: bool

@@ -166,6 +166,11 @@ def create_sale(
     client_info = get_client_info(request)
     config = get_store_config(db)
 
+    # Determinar si aplicar impuesto
+    # apply_tax: None = usar config, True = forzar con impuesto, False = sin impuesto
+    apply_tax = data.apply_tax if data.apply_tax is not None else config.tax_enabled
+    tax_rate = config.tax_rate if apply_tax else Decimal("0")
+
     # Validar productos y calcular totales
     sale_items = []
     subtotal = Decimal("0")
@@ -190,11 +195,11 @@ def create_sale(
                 detail=f"Stock insuficiente para {product.name}. Disponible: {product.current_stock}"
             )
 
-        # Calcular montos del item
+        # Calcular montos del item usando la tasa global
         item_subtotal = product.sale_price * item_data.quantity
         item_discount = item_subtotal * (item_data.discount_percent / 100)
         item_after_discount = item_subtotal - item_discount
-        item_tax = item_after_discount * product.tax_rate
+        item_tax = item_after_discount * tax_rate
         item_total = item_after_discount + item_tax
 
         sale_item = SaleItem(
@@ -203,7 +208,7 @@ def create_sale(
             product_name=product.name,
             unit_price=product.sale_price,
             cost_price=product.cost_price,
-            tax_rate=product.tax_rate,
+            tax_rate=tax_rate,  # Usar tasa global
             quantity=item_data.quantity,
             discount_percent=item_data.discount_percent,
             discount_amount=item_discount,

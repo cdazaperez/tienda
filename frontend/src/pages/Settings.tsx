@@ -8,6 +8,7 @@ import {
   Shield,
   Upload,
   Image,
+  Receipt,
 } from 'lucide-react';
 import { configApi } from '../services/api';
 import { useConfigStore } from '../store/configStore';
@@ -24,6 +25,9 @@ interface ConfigForm {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
+  tax_enabled: boolean;
+  tax_rate: number;
+  tax_name: string;
   dark_mode_default: boolean;
   allow_negative_stock: boolean;
   max_failed_attempts: number;
@@ -58,6 +62,9 @@ export function SettingsPage() {
           primary_color: config.primary_color,
           secondary_color: config.secondary_color,
           accent_color: config.accent_color,
+          tax_enabled: config.tax_enabled ?? true,
+          tax_rate: (parseFloat(config.tax_rate) || 0.19) * 100,  // Mostrar como porcentaje
+          tax_name: config.tax_name || 'IVA',
           dark_mode_default: config.dark_mode_default,
           allow_negative_stock: config.allow_negative_stock,
           max_failed_attempts: config.max_failed_attempts,
@@ -293,6 +300,53 @@ export function SettingsPage() {
               <label htmlFor="darkMode" className="text-sm">
                 Modo Oscuro por defecto
               </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Tax Settings */}
+        <div className="card">
+          <div className="card-header flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-primary-600" />
+            <h2 className="font-semibold">Configuración de Impuestos</h2>
+          </div>
+          <div className="card-body space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <input
+                type="checkbox"
+                id="taxEnabled"
+                className="w-4 h-4 rounded"
+                {...register('tax_enabled')}
+              />
+              <label htmlFor="taxEnabled" className="text-sm font-medium">
+                Aplicar impuestos por defecto en ventas
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Nombre del Impuesto"
+                placeholder="Ej: IVA, IGV, ISV"
+                {...register('tax_name')}
+              />
+              <div>
+                <label className="label">Tasa de Impuesto (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  className="input"
+                  {...register('tax_rate', {
+                    valueAsNumber: true,
+                    setValueAs: (v) => v / 100  // Convertir porcentaje a decimal
+                  })}
+                  placeholder="19"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ingrese el porcentaje (ej: 19 para 19%)
+                </p>
+              </div>
             </div>
           </div>
         </div>

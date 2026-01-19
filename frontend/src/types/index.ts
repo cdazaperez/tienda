@@ -135,6 +135,9 @@ export interface StoreConfig {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
+  tax_enabled: boolean;
+  tax_rate: string;
+  tax_name: string;
   dark_mode_default: boolean;
   allow_negative_stock: boolean;
   max_failed_attempts: number;

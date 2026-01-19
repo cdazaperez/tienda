@@ -1,6 +1,7 @@
 import uuid
+from decimal import Decimal
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base
@@ -20,6 +21,10 @@ class StoreConfig(Base):
     primary_color = Column(String(7), default="#3B82F6", nullable=False)
     secondary_color = Column(String(7), default="#1E40AF", nullable=False)
     accent_color = Column(String(7), default="#F59E0B", nullable=False)
+    # Configuración de impuestos
+    tax_enabled = Column(Boolean, default=True, nullable=False)
+    tax_rate = Column(Numeric(5, 4), default=Decimal("0.19"), nullable=False)  # Ej: 0.19 = 19%
+    tax_name = Column(String(50), default="IVA", nullable=False)
     # Configuración de recibos
     receipt_header = Column(Text, nullable=True)
     receipt_footer = Column(Text, default="Gracias por su compra", nullable=True)

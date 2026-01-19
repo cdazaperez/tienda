@@ -15,9 +15,11 @@ import {
   Package,
   Grid3X3,
   List,
+  Receipt,
 } from 'lucide-react';
 import { productApi, saleApi, categoryApi } from '../services/api';
 import { useCartStore } from '../store/cartStore';
+import { useConfigStore } from '../store/configStore';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
@@ -33,8 +35,10 @@ export function POSPage() {
   const [saleNotes, setSaleNotes] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'search'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [applyTax, setApplyTax] = useState<boolean | null>(null); // null = usar config
   const searchInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const { config } = useConfigStore();
 
   const {
     items,
@@ -88,6 +92,11 @@ export function POSPage() {
     enabled: searchTerm.length >= 2,
   });
 
+  // Calcular si aplicar impuesto
+  const shouldApplyTax = applyTax !== null ? applyTax : (config?.tax_enabled ?? true);
+  const taxRate = shouldApplyTax ? parseFloat(config?.tax_rate || '0.19') : 0;
+  const taxName = config?.tax_name || 'IVA';
+
   const createSaleMutation = useMutation({
     mutationFn: async () => {
       const saleData = {
@@ -99,6 +108,7 @@ export function POSPage() {
         payment_method: paymentMethod,
         amount_paid: parseFloat(amountPaid),
         discount_percent: globalDiscountPercent,
+        apply_tax: applyTax,
         notes: saleNotes || undefined,
       };
       return saleApi.create(saleData);
@@ -156,10 +166,14 @@ export function POSPage() {
   };
 
   const handleConfirmSale = () => {
-    const total = getTotal();
     const paid = parseFloat(amountPaid);
+    const sub = getSubtotal();
+    const discount = sub * (globalDiscountPercent / 100);
+    const afterDiscount = sub - discount;
+    const tax = shouldApplyTax ? afterDiscount * taxRate : 0;
+    const saleTotal = afterDiscount + tax;
 
-    if (paymentMethod === 'CASH' && paid < total) {
+    if (paymentMethod === 'CASH' && paid < saleTotal) {
       toast.error('El monto pagado es insuficiente');
       return;
     }
@@ -180,14 +194,19 @@ export function POSPage() {
 
   useEffect(() => {
     if (showPaymentModal) {
-      setAmountPaid(getTotal().toFixed(0));
+      const sub = getSubtotal();
+      const discount = sub * (globalDiscountPercent / 100);
+      const afterDiscount = sub - discount;
+      const tax = shouldApplyTax ? afterDiscount * taxRate : 0;
+      setAmountPaid((afterDiscount + tax).toFixed(0));
     }
-  }, [showPaymentModal, getTotal]);
+  }, [showPaymentModal, getSubtotal, globalDiscountPercent, shouldApplyTax, taxRate]);
 
   const subtotal = getSubtotal();
-  const taxAmount = getTaxAmount();
-  const total = getTotal();
   const globalDiscount = subtotal * (globalDiscountPercent / 100);
+  const subtotalAfterDiscount = subtotal - globalDiscount;
+  const taxAmount = shouldApplyTax ? subtotalAfterDiscount * taxRate : 0;
+  const total = subtotalAfterDiscount + taxAmount;
   const changeAmount =
     paymentMethod === 'CASH' ? Math.max(0, parseFloat(amountPaid || '0') - total) : 0;
 
@@ -580,6 +599,31 @@ export function POSPage() {
               />
             </div>
 
+            {/* Tax Toggle */}
+            <div className="mb-4 flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium">
+                  {taxName} ({(taxRate * 100).toFixed(0)}%)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setApplyTax(prev => prev === null ? !config?.tax_enabled : !prev)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  shouldApplyTax
+                    ? 'bg-primary-600'
+                    : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    shouldApplyTax ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* Totals */}
             <div className="space-y-2 py-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
@@ -594,9 +638,9 @@ export function POSPage() {
                 </div>
               )}
 
-              {taxAmount > 0 && (
+              {shouldApplyTax && taxAmount > 0 && (
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Impuestos</span>
+                  <span>{taxName} ({(taxRate * 100).toFixed(0)}%)</span>
                   <span>{formatCurrency(taxAmount)}</span>
                 </div>
               )}
