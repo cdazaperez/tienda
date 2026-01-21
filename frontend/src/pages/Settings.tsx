@@ -113,7 +113,12 @@ export function SettingsPage() {
   };
 
   const onSubmit = (data: ConfigForm) => {
-    updateMutation.mutate(data);
+    // Transformar tax_rate de porcentaje a decimal antes de enviar
+    const submitData = {
+      ...data,
+      tax_rate: data.tax_rate / 100  // Convertir 19 -> 0.19
+    };
+    updateMutation.mutate(submitData as unknown as ConfigForm);
   };
 
   if (isLoading) {
@@ -337,10 +342,7 @@ export function SettingsPage() {
                   min="0"
                   max="100"
                   className="input"
-                  {...register('tax_rate', {
-                    valueAsNumber: true,
-                    setValueAs: (v) => v / 100  // Convertir porcentaje a decimal
-                  })}
+                  {...register('tax_rate', { valueAsNumber: true })}
                   placeholder="19"
                 />
                 <p className="text-xs text-gray-500 mt-1">

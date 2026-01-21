@@ -41,8 +41,10 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   config: null,
   isLoading: true,
 
-  setConfig: (config) => {
-    set({ config });
+  setConfig: (newConfig) => {
+    set((state) => ({
+      config: state.config ? { ...state.config, ...newConfig } : newConfig
+    }));
     get().applyTheme();
   },
 
