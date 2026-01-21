@@ -4,24 +4,23 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Build Frontend (usando Bun - más rápido que npm)
+# Stage 1: Build Frontend (usando Node.js para compatibilidad con CPUs sin AVX)
 # -----------------------------------------------------------------------------
-FROM oven/bun:1 AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
 # Copiar archivos de dependencias
 COPY frontend/package*.json ./
-COPY frontend/bun.lockb* ./
 
-# Instalar dependencias
-RUN bun install --frozen-lockfile || bun install
+# Instalar dependencias con npm
+RUN npm ci || npm install
 
 # Copiar código fuente del frontend
 COPY frontend/ ./
 
 # Construir aplicación de producción
-RUN bun run build
+RUN npm run build
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
